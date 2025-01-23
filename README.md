@@ -3,6 +3,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 You will be able to listen to all the musics from yours beatmaps, by simply giving your game path.
 
+## State of the Repository
+
+For now, **the web application is still in development**.
+
+
+
 ## Getting Started
 
 First, run the development server:
