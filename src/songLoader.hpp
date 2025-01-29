@@ -11,9 +11,12 @@ using namespace std;
 class songLoader{
     private:
         vector<string> songs;
+        string filepath;
     public:
         songLoader(string filepath);
         ~songLoader();
+        void updateSongs();
+        void debugSongs();
 };
 
 
