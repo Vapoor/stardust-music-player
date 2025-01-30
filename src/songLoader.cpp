@@ -35,3 +35,19 @@ void songLoader::debugSongs(){
         cout << str << endl;
     }
 }
+
+void songLoader::listenSong(size_t index){
+    if (index < 0 || index >= songs.size()){
+        std::cerr << "Invalid Song Index, cannot play the song" << endl;
+        return;
+    }
+    if (!currentSong.openFromFile(songs[index])){
+        std::cerr << "Error SFML : Cannot open the .mp3 file " << songs[index] << endl;
+        return;
+    }
+
+    cout << "Now playing : " << getSongName(songs[index]) << endl;
+    currentSong.play();
+
+    
+}
