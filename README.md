@@ -17,5 +17,5 @@ This app was built for Windows only, because the Linux files of the game is scar
 
 ## Author
 
-This application has been only developped by myself.
+This application has been only developped by myself (Vapoor)
 

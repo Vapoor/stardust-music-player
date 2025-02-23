@@ -1,7 +1,7 @@
 #ifndef SONGLOADERHPP
 #define SONGLOADERHPP
 
-#include "../lib/SFML/include/SFML/Audio.hpp"
+//#include "../lib/SFML/include/SFML/Audio.hpp"
 #include <string>
 #include <iostream>
 #include <filesystem>
@@ -14,7 +14,7 @@ class songLoader{
     private:
         vector<string> songs;
         string filepath;
-        sf::Music currentSong;
+        //sf::Music currentSong;
     public:
         songLoader(string filepath);
         ~songLoader();

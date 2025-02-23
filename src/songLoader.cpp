@@ -37,6 +37,7 @@ void songLoader::debugSongs(){
 }
 
 void songLoader::listenSong(size_t index){
+    /*
     if (index < 0 || index >= songs.size()){
         std::cerr << "Invalid Song Index, cannot play the song" << endl;
         return;
@@ -48,6 +49,6 @@ void songLoader::listenSong(size_t index){
 
     cout << "Now playing : " << getSongName(songs[index]) << endl;
     currentSong.play();
-
+    */
     
 }
