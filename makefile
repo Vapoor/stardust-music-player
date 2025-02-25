@@ -1,17 +1,20 @@
-CXX = g++
-CXXFLAGS = -Wall -g `sdl2-config --cflags`
-LDFLAGS = `sdl2-config --libs` -lSDL2_mixer
-RM = rm -rf
+# Compiler and flags
+CXX := g++
+CXXFLAGS := -Wall -g 
+LDFLAGS := -L/ucrt64/lib -lSDL2 -lSDL2main -lSDL2_mixer
 
-SRC_DIR = src
-BUILD_DIR = build
-BIN_DIR = bin
+# Folders
+SRC_DIR := src
+BUILD_DIR := build
+BIN_DIR := bin
 
-SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/songLoader.cpp
-OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
-TARGET = $(BIN_DIR)/osuListener
+# Source files
+SRCS := $(SRC_DIR)/main.cpp $(SRC_DIR)/songLoader.cpp $(SRC_DIR)/utils.cpp
+OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
+TARGET := $(BIN_DIR)/osuListener.exe
 
-all: $(TARGET)
+# Build for Windows
+win: $(TARGET)
 
 $(TARGET): $(OBJS) | $(BIN_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
@@ -19,14 +22,13 @@ $(TARGET): $(OBJS) | $(BIN_DIR)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Create directories
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
+# Clean build files
 clean:
-	$(RM) $(BUILD_DIR) $(BIN_DIR)
-
-distclean: clean
-	$(RM) *.swp
+	rm -rf $(BUILD_DIR) $(BIN_DIR)
