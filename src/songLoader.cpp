@@ -37,18 +37,76 @@ void songLoader::debugSongs(){
 }
 
 void songLoader::listenSong(size_t index){
-    /*
-    if (index < 0 || index >= songs.size()){
-        std::cerr << "Invalid Song Index, cannot play the song" << endl;
-        return;
-    }
-    if (!currentSong.openFromFile(songs[index])){
-        std::cerr << "Error SFML : Cannot open the .mp3 file " << songs[index] << endl;
-        return;
+    bool running = true;
+    size_t currentSongIndex = index;
+    if (SDL_Init(SDL_INIT_AUDIO) < 0){
+        throw SDL_GetError();
     }
 
-    cout << "Now playing : " << getSongName(songs[index]) << endl;
-    currentSong.play();
-    */
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0){
+        throw Mix_GetError();
+    }
+
+    // Loading the mp3 file
+    Mix_Music* music = Mix_LoadMUS(songs[currentSongIndex].c_str());
+
+    while(running){
+        if(!music){
+            cerr << "Failed to load : " << songs[currentSongIndex] << endl;
+        }
+        Mix_PlayMusic(music,1);
+        cout << "Now Playing : " << songs[currentSongIndex] << endl;
     
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)){
+        if (event.type == SDL_QUIT){
+            running = false;
+            break;
+        }
+        else if (event.type == SDL_KEYDOWN){
+            switch (event.key.keysym.sym){
+                case SDLK_p: //Pause and Resume
+                    if (Mix_PausedMusic()){
+                        Mix_ResumeMusic();
+                    }
+                    else{
+                        Mix_PauseMusic();
+                    }
+                case SDLK_s: // Stop
+                    Mix_HaltMusic();
+                    Mix_FreeMusic(music);
+                    music = nullptr;
+                    break;
+
+                case SDLK_n: // Next Song
+                    Mix_HaltMusic();
+                    Mix_FreeMusic(music);
+                    music = nullptr;
+                    currentSongIndex = (currentSongIndex+1)% songs.size();
+                    break;
+
+                case SDLK_ESCAPE: // Quit
+                    running = false;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    if (!Mix_PlayingMusic() && music) {
+        Mix_FreeMusic(music);
+        music = nullptr;
+        currentSongIndex = (currentSongIndex+1)% songs.size();
+    }
+
+    SDL_Delay(100);
+
+    }
+
+    if (music) {
+        Mix_FreeMusic(music);
+    }
 }

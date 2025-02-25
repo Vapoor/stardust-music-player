@@ -1,5 +1,6 @@
 CXX = g++
-CXXFLAGS = -Wall -g
+CXXFLAGS = -Wall -g `sdl2-config --cflags`
+LDFLAGS = `sdl2-config --libs` -lSDL2_mixer
 RM = rm -rf
 
 SRC_DIR = src
@@ -13,7 +14,7 @@ TARGET = $(BIN_DIR)/osuListener
 all: $(TARGET)
 
 $(TARGET): $(OBJS) | $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@

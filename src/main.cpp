@@ -1,6 +1,6 @@
 #include "songLoader.hpp"
 
 int main(){
-    songLoader test = songLoader("C:/Users/Utilisateur/AppData/Local/osu!/Songs");
+    songLoader test = songLoader("./test");
     test.debugSongs();
 }
