@@ -46,6 +46,7 @@ void songLoader::listenSong(size_t index){
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0){
         throw Mix_GetError();
     }
+    cout << "Now Playing : " << songs[currentSongIndex] << endl;
 
     // Loading the mp3 file
     Mix_Music* music = Mix_LoadMUS(songs[currentSongIndex].c_str());
@@ -54,8 +55,9 @@ void songLoader::listenSong(size_t index){
         if(!music){
             cerr << "Failed to load : " << songs[currentSongIndex] << endl;
         }
+       
         Mix_PlayMusic(music,1);
-        cout << "Now Playing : " << songs[currentSongIndex] << endl;
+
     
 
     SDL_Event event;

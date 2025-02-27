@@ -13,6 +13,12 @@ SRCS := $(SRC_DIR)/main.cpp $(SRC_DIR)/songLoader.cpp $(SRC_DIR)/utils.cpp
 OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 TARGET := $(BIN_DIR)/osuListener.exe
 
+all:
+	@echo "Help Make"
+	@echo "make win -> Compile for Windows"
+	@echo "make lin -> Compile for Linux"
+	@echo "clean or distclean -> Destroy bin / build folder"
+
 # Build for Windows
 win: $(TARGET)
 
@@ -28,6 +34,8 @@ $(BUILD_DIR):
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
+
+lin: $(TARGET)
 
 # Clean build files
 clean:

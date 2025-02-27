@@ -39,15 +39,25 @@ To run **osuListener**, you need the following libraries installed on your syste
      ```
 
 
+## Start the application
 
+1. **Build the application using makefile.**
+    ```build
+      make win # For Windows
+      make lin # For Linux
+    ```
+2. **Start the application**
+    ```start
+    ./bin/osuListener.exe
+    ```
 
 ## FAQ
 
 **Which type of osu is supported ?**  
-For now, only default osu! is supported, because of futures Lazer updates.
+For now, the app is just looking for mp3 into a folder given into main, meaning you can do with osu! without any problems or with Lazer if you give TempFiles Folder, but **I would not recommand for now**.
 
 **Can the app be used on Linux and on Windows ?**   
-This app was built for Windows purpose only.
+This app was built for Windows and Linux, simply download the [depedencies](#Setup) then use make.
 
 
 ## Author

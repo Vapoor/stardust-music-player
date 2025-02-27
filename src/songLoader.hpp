@@ -21,7 +21,7 @@ class songLoader{
         ~songLoader();
         void updateSongs();
         void debugSongs();
-        void listenSong(size_t index);
+        void listenSong(size_t index=0);
 
 };
 
