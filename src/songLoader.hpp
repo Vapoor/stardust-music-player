@@ -16,12 +16,16 @@ class songLoader{
     private:
         vector<string> songs;
         string filepath;
+        size_t index = 0;
+        Mix_Music* currentmusic = nullptr;
+        void playNextSong();
+        int volume = 50; // 50%
     public:
         songLoader(string filepath);
         ~songLoader();
         void updateSongs();
         void debugSongs();
-        void listenSong(size_t index=0);
+        void listenSong();
 
 };
 
