@@ -37,78 +37,63 @@ void songLoader::debugSongs(){
 }
 
 void songLoader::listenSong(size_t index){
-    bool running = true;
-    size_t currentSongIndex = index;
-    if (SDL_Init(SDL_INIT_AUDIO) < 0){
-        throw SDL_GetError();
+    if (index < 0 || index >= songs.size()) {
+        std::cerr << "Invalid song index." << std::endl;
+        return;
     }
 
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0){
-        throw Mix_GetError();
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+        return;
     }
-    cout << "Now Playing : " << songs[currentSongIndex] << endl;
-
-    // Loading the mp3 file
-    Mix_Music* music = Mix_LoadMUS(songs[currentSongIndex].c_str());
-
-    while(running){
-        if(!music){
-            cerr << "Failed to load : " << songs[currentSongIndex] << endl;
-        }
-       
-        Mix_PlayMusic(music,1);
-
     
-
-    SDL_Event event;
-    while (SDL_PollEvent(&event)){
-        if (event.type == SDL_QUIT){
-            running = false;
-            break;
-        }
-        else if (event.type == SDL_KEYDOWN){
-            switch (event.key.keysym.sym){
-                case SDLK_p: //Pause and Resume
-                    if (Mix_PausedMusic()){
-                        Mix_ResumeMusic();
-                    }
-                    else{
-                        Mix_PauseMusic();
-                    }
-                case SDLK_s: // Stop
-                    Mix_HaltMusic();
-                    Mix_FreeMusic(music);
-                    music = nullptr;
-                    break;
-
-                case SDLK_n: // Next Song
-                    Mix_HaltMusic();
-                    Mix_FreeMusic(music);
-                    music = nullptr;
-                    currentSongIndex = (currentSongIndex+1)% songs.size();
-                    break;
-
-                case SDLK_ESCAPE: // Quit
-                    running = false;
-                    break;
-
-                default:
-                    break;
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "SDL_mixer could not initialize! Mix_Error: " << Mix_GetError() << std::endl;
+        SDL_Quit();
+        return;
+    }
+    
+    Mix_Music* music = Mix_LoadMUS(songs[index].c_str());
+    if (!music) {
+        std::cerr << "Failed to load music: " << Mix_GetError() << std::endl;
+        Mix_CloseAudio();
+        SDL_Quit();
+        return;
+    }
+    
+    Mix_PlayMusic(music, -1);
+    std::cout << "Playing: " << songs[index] << std::endl;
+    
+    std::string command;
+    while (true) {
+        std::cout << "Enter command (next, pause, resume, quit): ";
+        std::cin >> command;
+        
+        if (command == "pause") {
+            Mix_PauseMusic();
+        } else if (command == "resume") {
+            Mix_ResumeMusic();
+        } else if (command == "next") {
+            index = (index + 1) % songs.size();
+            Mix_FreeMusic(music);
+            if (index >= songs.size()){
+                break;
             }
+            music = Mix_LoadMUS(songs[index].c_str());
+            if (!music) {
+                std::cerr << "Failed to load next song: " << Mix_GetError() << std::endl;
+                break;
+            }
+            Mix_PlayMusic(music, -1);
+            std::cout << "Now playing: " << songs[index] << std::endl;
+        } else if (command == "quit") {
+            break;
+        } else {
+            std::cout << "Invalid command." << std::endl;
         }
     }
-
-    if (!Mix_PlayingMusic() && music) {
-        Mix_FreeMusic(music);
-        music = nullptr;
-        currentSongIndex = (currentSongIndex+1)% songs.size();
-    }
-
-    SDL_Delay(100);
-
-    }
-
-    if (music) {
-        Mix_FreeMusic(music);
-    }
+    
+    Mix_FreeMusic(music);
+    Mix_CloseAudio();
+    SDL_Quit();
 }
