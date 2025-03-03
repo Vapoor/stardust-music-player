@@ -1,9 +1,11 @@
 #include "utils.hpp"
 
-string getSongName(string filepath){
-    size_t pos = filepath.find(' ');
-    if (pos != string::npos){
-        return filepath.substr(pos+1);
+string getSongName(string filepath) {
+    std::regex pattern(R"(.*?/Songs[\\/]\d+\s+([^\\/]+)[\\/])");
+    std::smatch match;
+
+    if (std::regex_search(filepath, match, pattern)) {
+        return "\033[38;5;200m" + match[1].str() + "\033[0m";
     }
-    return filepath;
+    return "";
 }

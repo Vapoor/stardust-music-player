@@ -78,7 +78,7 @@ void songLoader::listenSong(){
     
     Mix_PlayMusic(currentmusic, 0);
     Mix_VolumeMusic((volume*128)/100);
-    std::cout << "Playing: " << songs[index] << std::endl;
+    std::cout << "Playing: " << getSongName(songs[index]) << std::endl;
     
     std::string command;
     while (true) {
@@ -104,7 +104,8 @@ void songLoader::listenSong(){
             Mix_PauseMusic();
         } else if (command == "resume" || command == "r") {
             Mix_ResumeMusic();
-        } else if (command == "next" || command =="n" ) {
+        } 
+            else if (command == "next" || command =="n" ) {
             index = (index + 1) % songs.size();
             Mix_FreeMusic(currentmusic);
             if (index >= songs.size()){
@@ -117,7 +118,7 @@ void songLoader::listenSong(){
                 break;
             }
             Mix_PlayMusic(currentmusic, 0);
-            std::cout << "Now playing: " << songs[index] << std::endl;
+            std::cout << "Now playing: " << getSongName(songs[index]) << std::endl;
             }
         } else if (command == "quit" || command == "q") {
             break;
