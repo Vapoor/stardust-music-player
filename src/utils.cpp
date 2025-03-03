@@ -7,5 +7,5 @@ string getSongName(string filepath) {
     if (std::regex_search(filepath, match, pattern)) {
         return "\033[38;5;200m" + match[1].str() + "\033[0m";
     }
-    return "";
+    return filepath;
 }

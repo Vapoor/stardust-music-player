@@ -86,13 +86,14 @@ void songLoader::listenSong(){
         cout << "Current Volume : " << "\033[32m" << volume << "\033[0m" << endl;
         cout << "You can set Volume by doing setv" << endl;
         cin >> command;
+        SDL_Delay(100);
 
 
         if (command == "setv"){
-            string volume;
+            string volum;
             cout << "Choose a volume (between 0% and 100%)" << endl;
-            cin >> volume;
-            int vol = stoi(volume);
+            cin >> volum;
+            int vol = stoi(volum);
             if (vol < 0 || vol > 100){
                 cerr << "You cannot put volume under 0 or above 100%" << endl;
             }
@@ -121,8 +122,9 @@ void songLoader::listenSong(){
             std::cout << "Now playing: " << getSongName(songs[index]) << std::endl;
             }
         } else if (command == "quit" || command == "q") {
-            break;
-        } else {
+            break; 
+        }
+        else  {
             std::cout << "Invalid command." << std::endl;
         }
     }
