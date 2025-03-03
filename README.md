@@ -48,7 +48,7 @@ To run **osuListener**, you need the following libraries installed on your syste
     ```
 2. **Start the application**
     ```start
-    ./bin/osuListener.exe
+    ./bin/osuListener.exe {PathToFolderYouWant}
     ```
 
 ## FAQ

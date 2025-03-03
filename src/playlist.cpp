@@ -1,7 +1,7 @@
 #include "playlist.hpp"
 
-Playlist::Playlist(string user_name)
-:name(user_name),playlistsongs(vector<string>())
+Playlist::Playlist(string user_name,string filepath)
+:name(user_name),filepath(filepath),playlistsongs(vector<string>())
 {}
 
 

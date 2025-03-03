@@ -15,8 +15,7 @@ using namespace std;
 
 class songLoader{
     private:
-        vector<Playlist> userplaylists; // Array containing Playlists
-        vector<string> songs;
+        Playlist songs;
         string filepath;
         size_t index = 0;
         Mix_Music* currentmusic = nullptr;
