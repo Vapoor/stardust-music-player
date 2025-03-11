@@ -1,5 +1,5 @@
 #include <csignal>
-#include "songLoader.hpp"
+#include "user.hpp"
 
 void handleSignal(int signal) {
     std::cout << "\nCtrl+C detected! Stopping music and exiting..." << std::endl;
@@ -11,8 +11,6 @@ void handleSignal(int signal) {
 
 int main(int argc, char* argv[]){
     signal(SIGINT, handleSignal);
-    songLoader test = songLoader("./test"); // Put Whatever folder with mp3 you want
-    // test.debugSongs();
-    test.listenSong();
+    User mainuser();
     return 0;
 }

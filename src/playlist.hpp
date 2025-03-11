@@ -8,12 +8,12 @@ using namespace std;
 class Playlist{
     private:
         string name;
-        string filepath;
         vector<string> playlistsongs;
 
     public:
-        Playlist(string user_name, string filepath);
+        Playlist(string user_name);
         ~Playlist();
+        void addSong(string new_song);
 
 };
 

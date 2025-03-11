@@ -1,16 +1,19 @@
 #ifndef USER_HPP
 #define USER_HPP
 
+
+#include <filesystem>
 #include "songLoader.hpp"
 #include "playlist.hpp"
 
+
 class User{
     private:
-        vector<Playlist> playlists;
-        Playlist selectedPlaylist;
+        Playlist* selectedPlaylist;
+        void setPlaylists(string path);
 
     public:
-    User();
+    User(string path);
     ~User();
 
 };
