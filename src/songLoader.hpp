@@ -15,17 +15,13 @@ using namespace std;
 
 class songLoader{
     private:
-        Playlist songs;
         string filepath;
-        size_t index = 0;
         Mix_Music* currentmusic = nullptr;
         void playNextSong();
         int volume = 50; // 50%
     public:
         songLoader(string filepath);
         ~songLoader();
-        void updateSongs();
-        void debugSongs();
         void listenSong();
 
 };
