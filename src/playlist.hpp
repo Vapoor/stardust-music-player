@@ -3,6 +3,10 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <iostream>
+
+#include "utils.hpp"
 using namespace std;
 
 class Playlist{
@@ -14,6 +18,7 @@ class Playlist{
         Playlist(string user_name);
         ~Playlist();
         void addSong(string new_song);
+        string getSong(size_t index);
 
 };
 

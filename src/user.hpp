@@ -5,6 +5,7 @@
 #include <filesystem>
 #include "songLoader.hpp"
 #include "playlist.hpp"
+#include "utils.hpp"
 
 
 class User{
@@ -15,6 +16,7 @@ class User{
     public:
     User(string path);
     ~User();
+    void startListening();
 
 };
 

@@ -14,3 +14,20 @@ string getSongName(string filepath) {
         return filepath;
     }
 }
+
+string getPlaylistName(string filepath){
+    // Check if the filepath contains "bin/playlist"
+    if (filepath.find("bin/playlist") != std::string::npos) {
+        // Find the position of the last '/'
+        size_t lastSlash = filepath.find_last_of("/");
+        
+        // If a slash is found and it's not the last character, extract the name
+        if (lastSlash != std::string::npos && lastSlash + 1 < filepath.length()) {
+            return filepath.substr(lastSlash + 1);
+        }
+    }
+    
+    return "Untitled Playlist";
+}
+
+

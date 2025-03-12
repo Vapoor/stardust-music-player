@@ -11,6 +11,15 @@ void handleSignal(int signal) {
 
 int main(int argc, char* argv[]){
     signal(SIGINT, handleSignal);
-    User mainuser();
+    string select  = " ";
+    if (argc > 1){
+        select = argv[1];
+    }
+    else{
+        select = "./test";
+    }
+
+    User mainuser(select);
+    mainuser.startListening();
     return 0;
 }

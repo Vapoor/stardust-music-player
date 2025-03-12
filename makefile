@@ -9,7 +9,7 @@ BUILD_DIR := build
 BIN_DIR := bin
 
 # Source files
-SRCS := $(SRC_DIR)/main.cpp $(SRC_DIR)/songLoader.cpp $(SRC_DIR)/utils.cpp
+SRCS := $(SRC_DIR)/main.cpp $(SRC_DIR)/songLoader.cpp $(SRC_DIR)/utils.cpp $(SRC_DIR)/user.cpp $(SRC_DIR)/playlist.cpp
 OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRCS))
 TARGET := $(BIN_DIR)/osuListener.exe
 

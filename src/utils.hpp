@@ -5,5 +5,6 @@
 using namespace std;
 
 string getSongName(string filepath);
+string getPlaylistName(string filepath);
 
 #endif
