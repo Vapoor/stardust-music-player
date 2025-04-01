@@ -18,6 +18,7 @@ class Playlist{
         Playlist(string user_name);
         ~Playlist();
         void addSong(string new_song);
+        inline size_t getSize(){return playlistsongs.size();};
         string getSong(size_t index);
 
 };

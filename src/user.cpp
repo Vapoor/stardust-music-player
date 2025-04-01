@@ -32,6 +32,10 @@ void User::setPlaylists(string path){
 }
 
 void User::startListening(){
+    if (selectedPlaylist->getSize() == 0){
+        std::cout << "Could not find any .mp3 file in that folder" << endl;
+    }
+    else{
     songLoader music;
     size_t index = 0;
     music.listenSong(selectedPlaylist->getSong(index));
@@ -85,5 +89,6 @@ void User::startListening(){
         else  {
             std::cout << "Invalid command." << std::endl;
         }
+    }
     }
 }
