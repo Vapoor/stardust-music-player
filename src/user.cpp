@@ -2,6 +2,26 @@
 
 namespace fs = std::filesystem;
 
+/**
+ * Debugging Purpose
+ */
+
+ void User::debugmusicFiles(){
+    for (size_t i = 0; i < musicFiles.size(); i++){
+        cout << musicFiles[i] << endl;
+    }
+ }
+
+
+
+
+
+ /**
+  * Functions of the 
+  * User Class
+  */
+
+
 User::User(string path)
 {
     setmusicFiles(path);
@@ -39,19 +59,31 @@ void User::readExistingPlaylist(){
 }
 
 void User::startListening(Playlist* current_playlist){
-    if (current_playlist->getSize() <= 0){
-        std::cout << "Could not find any .mp3 file in that folder" << endl;
-    }
-    else{
     songLoader music;
     size_t index = 0;
-    music.listenSong(current_playlist->getSong(index));
+    if(current_playlist == nullptr){
+        cout << "No playlist has been selected" << endl;
+        if(musicFiles.size() != 0){
+            music.listenSong(musicFiles[0]);
+        }
+    }
+    else if (current_playlist->getSize() <= 0){
+        std::cout << "This playlist don't have any musics in it" << endl;
+        if(musicFiles.size() != 0){
+            music.listenSong(musicFiles[0]);
+        }
+   
+    }
 
+    else{
+        music.listenSong(current_playlist->getSong(index));
+    }
     std::string command;
+
+    // Menu while Listening 
     while (true) {
         cout << "Enter command (next, pause, resume, quit): " << endl;
-        cout << "Current Volume : " << "\033[32m" << music.getVolume() << "\033[0m" << endl;
-        cout << "You can set Volume by doing setv" << endl;
+        cout << "Current Volume : " << "\033[32m" << music.getVolume() << "\033[0m" << " | You can set Volume by doing setv" << endl;
         cin >> command;
         SDL_Delay(100);
 
@@ -96,6 +128,5 @@ void User::startListening(Playlist* current_playlist){
         else  {
             std::cout << "Invalid command." << std::endl;
         }
-    }
     }
 }

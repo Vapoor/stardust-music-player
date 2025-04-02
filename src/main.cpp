@@ -20,6 +20,7 @@ int main(int argc, char* argv[]){
     }
 
     User mainuser(select);
+    mainuser.debugmusicFiles();
     mainuser.startListening();
     return 0;
 }

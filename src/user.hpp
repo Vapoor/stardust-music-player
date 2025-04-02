@@ -11,7 +11,7 @@
 
 class User{
     private:
-        vector<const string> musicFiles;
+        vector<string> musicFiles;
         vector<Playlist*> allPlaylists;
         void setmusicFiles(string path);
         void readExistingPlaylist();
@@ -19,7 +19,8 @@ class User{
     public:
     User(string path);
     ~User();
-    void startListening(Playlist* current_playlist);
+    void startListening(Playlist* current_playlist = nullptr);
+    void debugmusicFiles();
 
 };
 

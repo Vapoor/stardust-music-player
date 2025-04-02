@@ -1,0 +1,3 @@
+testplaylist
+1,test/CrystaliaDJ TOTTO.mp3
+2,test/LV.4 - Burning Star (Radio edit) [Official].mp3
