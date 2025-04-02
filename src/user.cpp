@@ -12,10 +12,6 @@ namespace fs = std::filesystem;
     }
  }
 
-
-
-
-
  /**
   * Functions of the 
   * User Class
@@ -55,7 +51,9 @@ void User::setmusicFiles(string path){
 
 
 void User::readExistingPlaylist(){
-
+    for (const auto& entry : fs::directory_iterator("playlists")){
+        
+    }
 }
 
 void User::startListening(Playlist* current_playlist){
