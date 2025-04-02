@@ -15,8 +15,7 @@ TARGET := $(BIN_DIR)/osuListener.exe
 
 all:
 	@echo "Help Make"
-	@echo "make win -> Compile for Windows"
-	@echo "make lin -> Compile for Linux"
+	@echo "make -> Compile the project, Linux Only"
 	@echo "clean or distclean -> Destroy bin / build folder"
 
 # Build for Windows

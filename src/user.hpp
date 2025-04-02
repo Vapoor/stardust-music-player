@@ -3,6 +3,7 @@
 
 
 #include <filesystem>
+#include <algorithm>
 #include "songLoader.hpp"
 #include "playlist.hpp"
 #include "utils.hpp"
@@ -10,13 +11,15 @@
 
 class User{
     private:
-        Playlist* selectedPlaylist;
-        void setPlaylists(string path);
+        vector<const string> musicFiles;
+        vector<Playlist*> allPlaylists;
+        void setmusicFiles(string path);
+        void readExistingPlaylist();
 
     public:
     User(string path);
     ~User();
-    void startListening();
+    void startListening(Playlist* current_playlist);
 
 };
 

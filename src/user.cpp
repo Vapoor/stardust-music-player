@@ -4,21 +4,24 @@ namespace fs = std::filesystem;
 
 User::User(string path)
 {
-    setPlaylists(path);
+    setmusicFiles(path);
+    readExistingPlaylist();
 }
 
 User::~User()
 {
-    selectedPlaylist = nullptr;
+    musicFiles.clear();
 }
 
-void User::setPlaylists(string path){
-    Playlist* ret = new Playlist(getPlaylistName(path));
+void User::setmusicFiles(string path){
     try {
         if (fs::exists(path) && fs::is_directory(path)) {
             for (const auto& entry : fs::recursive_directory_iterator(path)) {
                 if (entry.is_regular_file() && entry.path().extension() == ".mp3") {
-                    ret->addSong(entry.path().string());
+                    if (find(musicFiles.begin(),musicFiles.end(), entry.path().string()) == musicFiles.end()){
+                        // Avoiding putting 2 times the same music, would be dumb no :) ?
+                        musicFiles.push_back(entry.path().string());
+                    }
                 }
             }
         } else {
@@ -28,17 +31,21 @@ void User::setPlaylists(string path){
         std::cerr << "Filesystem error: " << e.what() << std::endl;
         }
 
-    selectedPlaylist = ret;
 }
 
-void User::startListening(){
-    if (selectedPlaylist->getSize() == 0){
+
+void User::readExistingPlaylist(){
+
+}
+
+void User::startListening(Playlist* current_playlist){
+    if (current_playlist->getSize() <= 0){
         std::cout << "Could not find any .mp3 file in that folder" << endl;
     }
     else{
     songLoader music;
     size_t index = 0;
-    music.listenSong(selectedPlaylist->getSong(index));
+    music.listenSong(current_playlist->getSong(index));
 
     std::string command;
     while (true) {
