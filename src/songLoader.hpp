@@ -24,6 +24,8 @@ class songLoader{
         void listenSong(string song);
         inline int getVolume(){return volume;};
         inline void setVolume(int vol){volume = vol;};
+        inline Mix_Music* getMusic(){return currentmusic;};
+        inline void setMusic(Mix_Music* music){currentmusic = music;};
 
 };
 

@@ -51,9 +51,11 @@ void User::setmusicFiles(string path){
 
 
 void User::readExistingPlaylist(){
+    /*
     for (const auto& entry : fs::directory_iterator("playlists")){
         
     }
+    */
 }
 
 void User::startListening(Playlist* current_playlist){
@@ -104,23 +106,28 @@ void User::startListening(Playlist* current_playlist){
             Mix_ResumeMusic();
         } 
             else if (command == "next" || command =="n" ) {
-                /*
-            index = (index + 1) % songs.size();
-            Mix_FreeMusic(currentmusic);
-            if (index >= songs.size()){
-                playNextSong();
+            index = (index + 1) % musicFiles.size();
+            Mix_FreeMusic(music.getMusic());
+            if (index >= musicFiles.size()){
+                index = 0;
+                music.setMusic(Mix_LoadMUS(musicFiles[index].c_str()));
+                Mix_PlayMusic(music.getMusic(),0);
             }
             else{
-            currentmusic = Mix_LoadMUS(songs[index].c_str());
-            if (!currentmusic) {
+            music.setMusic(Mix_LoadMUS(musicFiles[index].c_str()));
+            /*
+            if (!music) {
                 std::cerr << "Failed to load next song: " << Mix_GetError() << std::endl;
                 break;
             }
-            Mix_PlayMusic(currentmusic, 0);
-            std::cout << "Now playing: " << getSongName(songs[index]) << std::endl;
-            }
             */
-        } else if (command == "quit" || command == "q") {
+            Mix_PlayMusic(music.getMusic(), 0);
+            std::cout << "Now playing: " << getSongName(musicFiles[index]) << std::endl;
+            }
+        } else if (command == "quit" || command == "q") {     
+            Mix_FreeMusic(music.getMusic());
+            Mix_CloseAudio();
+            SDL_Quit();
             break; 
         }
         else  {
