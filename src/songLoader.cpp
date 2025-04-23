@@ -43,10 +43,7 @@ void songLoader::listenSong(string song){
     std::cout << "Playing: " << getSongName(song) << std::endl;
     
    
-    // ???
-    Mix_FreeMusic(currentmusic);
-    Mix_CloseAudio();
-    SDL_Quit();
+
 }
 
 
