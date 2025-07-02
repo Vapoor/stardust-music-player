@@ -1,75 +1,122 @@
 # osu!Listener
 
-osu!Listener is a project made by my own as a side project. It got mainly created for a personnal usage but feel free to give it a try.  
-This application is allowing you to listen to your Osu! beatmaps. You can create playlist and retrieve them later at each restart.
-**This project is probably far from being "clean", but we're all starting somewhere :)**
 
-## Visuals
+A console-based music player specifically designed for osu! beatmap collections. Automatically scans your osu! Songs folder and allows you to create custom playlists and control playback with simple commands.
 
-- Empty for now, mainly console based.
+## Features
 
-## Setup
+- **Automatic Song Discovery**: Scans `%LOCALAPPDATA%/osu!/Songs` for all beatmaps
+- **Duplicate Handling**: Automatically filters out duplicate songs with different IDs
+- **Custom Playlists**: Create, manage, and play custom playlists
+- **Playback Controls**: Play, pause, stop, next, previous, volume control
+- **Search Functionality**: Search through your song collection
+- **Queue Management**: View and manage the current playback queue
 
-To run **osu!Listener**, you need the following libraries installed on your system:
+## Requirements
 
-### **Required Libraries:**
+- Windows (99% sure you got this requirement)
+- x64 Native Tools for VS 2022 | [Download Here](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+- FMOD Engine Library | [Download Here](https://www.fmod.com/download)
+## Installation
 
-1. **SDL2**  
-   SDL2 is used for handling graphics, events, and audio.
+### Using .bat file
 
-   - On **Linux** (Ubuntu/Debian):
-     ```sh
-     sudo apt-get install libsdl2-dev
-     ```
+1. **Open x64 Native Tools Command Prompt for VS 2022**
 
-   - On **Windows** (using MSYS2 with UCRT64):
-     You can install SDL2 through **MSYS2** using the following command:
-     ```sh
-     pacman -S mingw-w64-ucrt-x86_64-SDL2
-     ```
+2. **Build the project**:
+   ```bash
+   build_msvc.bat
+   ```
+## Usage
 
-2. **SDL2_mixer**  
-   SDL2_mixer is used for handling audio formats like MP3 and WAV.
+1. **Run the program**:
+   ```
+   ./bin/osuListener.exe
+   ```
+2. **Basic Commands**:
+   - `help` - Show all available commands
+   - `scan` - Scan osu! songs directory
+   - `list` - Show all discovered songs
+   - `play <number>` - Play song by index
+   - `pause` - Pause/resume playback
+   - `next` - Next song
+   - `prev` - Previous song
+   - `stop` - Stop playback
 
-   - On **Linux** (Ubuntu/Debian):
-     ```sh
-     sudo apt-get install libsdl2-mixer-dev
-     ```
+3. **Playlist Management**:
+   - `playlists` - Show all playlists
+   - `create <name>` - Create new playlist
+   - `add <playlist> <song_index>` - Add song to playlist
+   - `playlist <name>` - Play entire playlist
+   - `show <name>` - Show playlist contents
 
-   - On **Windows** (using MSYS2 with UCRT64):
-     Install it using:
-     ```sh
-     pacman -S mingw-w64-ucrt-x86_64-SDL2_mixer
-     ```
+4. **Other Commands**:
+   - `search <query>` - Search for songs
+   - `vol <0-100>` - Set volume
+   - `current` - Show current song info
+   - `queue` - Show current playback queue
+   - `quit` - Exit program
+
+## Example Usage Session
+
+```
+> scan
+Scanning osu! songs directory...
+Found 150 unique songs.
+
+> list
+Songs (150 total):
+1. Camellia - Ghost
+2. DragonForce - Through the Fire and Flames
+3. Hatsune Miku - Senbonzakura
+...
+
+> create favorites
+Created playlist: favorites
+
+> add favorites 1
+Added 'Camellia - Ghost' to playlist 'favorites'
 
 
-## Start the application
+> playlist favorites
+Queue set to playlist 'favorites' (1 songs)
+Playing: Camellia - Ghost
 
-1. **Build the application using makefile.**
-    ```build
-      make 
-    ```
-2. **Start the application**
-    ```start
-    ./bin/osuListener.exe </Path/To/Osu/Songs>
-    ```
+> pause
+Paused
 
-## FAQ
+> next
+Reached end of queue, looping to beginning.
+Playing: Camellia - Ghost
+```
 
-- **How it works ?**  
-For now, the application looking at the path given, and run a program to look all the mp3 found , even in the folders, so if you give the root of your computer, except a long long time waiting.
+- **Without FMOD**: The program will still work but will only simulate audio playback (no actual sound)
+- **Playlist Persistence**: Playlists are automatically saved to `playlists.txt` and loaded on startup
+- **osu! Path Detection**: Automatically detects the standard osu! installation path
+- **Memory Usage**: Designed to handle large song collections efficiently
 
-- **Can the app be used on Linux and on Windows ?**   
-This app was built for Linux only, you can still launch it into a Windows if you install MSYS2. I used UCRT64 to create my config.  
-For the rest simply download the [depedencies](#Setup) then use make.
+## Troubleshooting
 
-- **Can it supports others folder than Songs from Osu?**  
-Yes it can theoretically, but I might not have fix every issues. So don't be suprised if you got an unwanted result.
+### "osu! Songs folder not found"
+- Ensure osu! is installed in the standard location (`%LOCALAPPDATA%/osu!/`)
+- Check that the Songs folder exists and contains beatmap folders
+- **osu!Lazer is not supported for now**
 
-- **Which osu is supported ?**  
-For now, the application only supporting **stable version** of osu!, mainly because Lazer is still a WIP thing, and songs handling could change at any moment.
+### "FMOD not available" or no audio
+- Download and properly install FMOD as described in the installation steps
+- Ensure `fmod.dll` is in the same directory as the executable
+- Rebuild the project after adding FMOD
+
+### Build errors
+- Ensure you're using a C++17 compatible compiler
+- Check that all source files are in the same directory
+- For Visual Studio: use "x64" configuration, not "x86"
+
+
+## License
+
+This project is for educational and personal use. FMOD has its own licensing terms for commercial use.
 
 ## Authors
 
-This application has been only developped by myself (Vapoor)
-
+This project got maded by Vaporr for educational purpose.
