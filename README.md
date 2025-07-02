@@ -1,5 +1,6 @@
 # osu!Listener
 
+
 A console-based music player specifically designed for osu! beatmap collections. Automatically scans your osu! Songs folder and allows you to create custom playlists and control playback with simple commands.
 
 ## Features
@@ -26,14 +27,12 @@ A console-based music player specifically designed for osu! beatmap collections.
    ```bash
    build_msvc.bat
    ```
-
 ## Usage
 
 1. **Run the program**:
    ```
    ./bin/osuListener.exe
    ```
-
 2. **Basic Commands**:
    - `help` - Show all available commands
    - `scan` - Scan osu! songs directory
@@ -78,6 +77,7 @@ Created playlist: favorites
 > add favorites 1
 Added 'Camellia - Ghost' to playlist 'favorites'
 
+
 > playlist favorites
 Queue set to playlist 'favorites' (1 songs)
 Playing: Camellia - Ghost
@@ -89,8 +89,6 @@ Paused
 Reached end of queue, looping to beginning.
 Playing: Camellia - Ghost
 ```
-
-## Notes
 
 - **Without FMOD**: The program will still work but will only simulate audio playback (no actual sound)
 - **Playlist Persistence**: Playlists are automatically saved to `playlists.txt` and loaded on startup
