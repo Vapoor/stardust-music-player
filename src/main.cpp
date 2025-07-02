@@ -1,26 +1,24 @@
-#include <csignal>
-#include "user.hpp"
+#include <iostream>
+#include "../headers/musicPlayer.hpp"
 
-void handleSignal(int signal) {
-    std::cout << "\nCtrl+C detected! Stopping music and exiting..." << std::endl;
-    Mix_HaltMusic(); // Stop music
-    Mix_CloseAudio(); // Close SDL_Mixer properly
-    SDL_Quit(); // Quit SDL
-    exit(0); // Ensure clean exit
-}
-
-int main(int argc, char* argv[]){
-    signal(SIGINT, handleSignal);
-    string select  = " ";
-    if (argc > 1){
-        select = argv[1];
+int main() {
+    try {
+        MusicPlayer player;
+        
+        if (!player.initialize()) {
+            std::cout << "Failed to initialize music player!" << std::endl;
+            return 1;
+        }
+        
+        player.run();
+        
+    } catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return 1;
+    } catch (...) {
+        std::cout << "Unknown error occurred!" << std::endl;
+        return 1;
     }
-    else{
-        select = "./test";
-    }
-
-    User mainuser(select);
-    mainuser.debugmusicFiles();
-    mainuser.startListening();
+    
     return 0;
 }
