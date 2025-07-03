@@ -5,7 +5,7 @@
 
 // Discord Game SDK includes (only if available)
 #ifdef DISCORD_AVAILABLE
-#include "discord.h"
+#include "../lib/discord_game_sdk/cpp/discord.h"
 #endif
 
 // Your Discord Application ID
