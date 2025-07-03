@@ -12,12 +12,19 @@ A console-based music player specifically designed for osu! beatmap collections.
 - **Search Functionality**: Search through your song collection
 - **Queue Management**: View and manage the current playback queue
 
+   ### Can now handle Discord Rich Presence !
+
 ## Requirements
 
 - Windows (99% sure you got this requirement)
 - x64 Native Tools for VS 2022 | [Download Here](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 - FMOD Engine Library | [Download Here](https://www.fmod.com/download)
 ## Installation
+
+### FMOD Lib
+
+1. **Uncompress the folder into lib folder**
+   - You **have** to create this lib folder. The path expected should be ```root/lib/FMOD Studio API Windows```.
 
 ### Using .bat file
 
@@ -94,6 +101,18 @@ Playing: Camellia - Ghost
 - **Playlist Persistence**: Playlists are automatically saved to `playlists.txt` and loaded on startup
 - **osu! Path Detection**: Automatically detects the standard osu! installation path
 - **Memory Usage**: Designed to handle large song collections efficiently
+
+## Setup Discord Rich Presence
+
+If you want to show to everyone that you are using my application (which is kinda cool right ?), here is all the steps.
+
+1. Install to official [Discord SDK Game library](https://discord.com/developers/docs/developer-tools/game-sdk). (This app was tested using the 3.2.1 version only).
+
+2. Extraction the library into the project into lib folder. **You need to create the lib folder if not already done**. The path should be ```root/lib/discord_sdk_game```
+
+3. Install the application through this [link](https://discord.com/oauth2/authorize?client_id=1389957827065548892) then add it to your discord applications.
+
+Now rebuild the app, the .bat should inform you if he found or not the SDK. If yes, you should now see your profile changing based on what your listening !
 
 ## Troubleshooting
 

@@ -3,14 +3,17 @@
 
 #include <string>
 #include <memory>
-#include "Song.hpp"
+#include "song.hpp"
 
 // Forward declaration for FMOD types
-namespace FMOD {
-    class System;
-    class Sound;
-    class Channel;
-}
+#ifdef FMOD_AVAILABLE
+struct FMOD_SYSTEM;
+struct FMOD_SOUND;
+struct FMOD_CHANNEL;
+typedef struct FMOD_SYSTEM FMOD_SYSTEM;
+typedef struct FMOD_SOUND FMOD_SOUND;
+typedef struct FMOD_CHANNEL FMOD_CHANNEL;
+#endif
 
 enum class PlaybackState {
     STOPPED,
@@ -35,6 +38,7 @@ public:
     PlaybackState getState() const;
     bool isPlaying() const;
     bool isPaused() const;
+    bool hasFinished() const;  // New method to check if song finished
     
     void setVolume(float volume); // 0.0 to 1.0
     float getVolume() const;
@@ -49,13 +53,20 @@ public:
     void update(); // Call this regularly to update FMOD
     
 private:
-    FMOD::System* fmodSystem;
-    FMOD::Sound* currentSound;
-    FMOD::Channel* currentChannel;
+#ifdef FMOD_AVAILABLE
+    FMOD_SYSTEM* fmodSystem;
+    FMOD_SOUND* currentSound;
+    FMOD_CHANNEL* currentChannel;
+#else
+    void* fmodSystem;
+    void* currentSound;
+    void* currentChannel;
+#endif
     
     Song currentSong;
     PlaybackState state;
     float volume;
+    bool songFinished;  // Track if current song finished naturally
     
     bool initializeFMOD();
 };

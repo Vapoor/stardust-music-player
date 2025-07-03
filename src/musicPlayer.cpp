@@ -5,10 +5,14 @@
 #include <sstream>
 #include <thread>
 #include <chrono>
+#include <random>
+#include <fstream>
 
-MusicPlayer::MusicPlayer() : currentSongIndex(-1), isUsingPlaylist(false) {}
+MusicPlayer::MusicPlayer() : currentSongIndex(-1), randomPosition(-1), queueMode(QueueMode::ALL_SONGS), savedVolume(1.0f) {}
 
-MusicPlayer::~MusicPlayer() {}
+MusicPlayer::~MusicPlayer() {
+    saveSettings();
+}
 
 bool MusicPlayer::initialize() {
     std::cout << "Initializing osu! Music Player..." << std::endl;
@@ -18,6 +22,13 @@ bool MusicPlayer::initialize() {
         std::cout << "Failed to initialize audio player!" << std::endl;
         return false;
     }
+    
+    // Initialize Discord Rich Presence
+    richPresence.initialize();
+    
+    // Load settings
+    loadSettings();
+    audioPlayer.setVolume(savedVolume);
     
     // Load playlists
     PlaylistManager::getInstance().loadPlaylistsFromFile("playlists.txt");
@@ -32,6 +43,7 @@ bool MusicPlayer::initialize() {
 void MusicPlayer::run() {
     std::cout << "\n=== osu! Music Player ===" << std::endl;
     std::cout << "Type 'help' for available commands" << std::endl;
+    richPresence.setBrowsingState(static_cast<int>(allSongs.size()));
     
     std::string input;
     while (true) {
@@ -47,8 +59,9 @@ void MusicPlayer::run() {
         processCommand(input);
     }
     
-    // Save playlists before exiting
+    // Save playlists and settings before exiting
     PlaylistManager::getInstance().savePlaylistsToFile("playlists.txt");
+    saveSettings();
     std::cout << "Goodbye!" << std::endl;
 }
 
@@ -60,6 +73,7 @@ void MusicPlayer::displayMenu() {
     std::cout << "  list - Show all songs" << std::endl;
     std::cout << "  search <query> - Search for songs" << std::endl;
     std::cout << "  queue - Show current queue" << std::endl;
+    std::cout << "  all - Switch back to all songs mode" << std::endl;
     std::cout << "\nPlayback:" << std::endl;
     std::cout << "  play <number> - Play song by index" << std::endl;
     std::cout << "  play - Resume/play current song" << std::endl;
@@ -67,8 +81,9 @@ void MusicPlayer::displayMenu() {
     std::cout << "  stop - Stop playback" << std::endl;
     std::cout << "  next - Next song" << std::endl;
     std::cout << "  prev - Previous song" << std::endl;
-    std::cout << "  vol <0-100> - Set volume" << std::endl;
+    std::cout << "  vol <0-100> - Set volume (persistent)" << std::endl;
     std::cout << "  current - Show current song info" << std::endl;
+    std::cout << "  random - Enable random mode" << std::endl;
     std::cout << "\nPlaylists:" << std::endl;
     std::cout << "  playlists - Show all playlists" << std::endl;
     std::cout << "  create <name> - Create new playlist" << std::endl;
@@ -101,6 +116,12 @@ void MusicPlayer::processCommand(const std::string& command) {
         std::string query = command.substr(command.find(' ') + 1);
         searchSongs(query);
     }
+    else if (cmd == "all") {
+        setQueueFromAllSongs();
+    }
+    else if (cmd == "random") {
+        setRandomMode();
+    }
     else if (cmd == "play") {
         if (parts.size() > 1) {
             int index = parseIntCommand(parts[1]) - 1; // Convert to 0-based index
@@ -108,6 +129,7 @@ void MusicPlayer::processCommand(const std::string& command) {
         } else {
             if (audioPlayer.isPaused()) {
                 audioPlayer.resume();
+                updateDiscordPresence();
             } else {
                 playCurrentSong();
             }
@@ -174,7 +196,12 @@ void MusicPlayer::processCommand(const std::string& command) {
 void MusicPlayer::scanSongs() {
     std::cout << "Scanning osu! songs..." << std::endl;
     allSongs = SongScanner::scanOsuSongs();
-    setQueueFromAllSongs();
+    
+    if (queueMode == QueueMode::ALL_SONGS) {
+        setQueueFromAllSongs();
+    }
+    
+    richPresence.setBrowsingState(static_cast<int>(allSongs.size()));
 }
 
 void MusicPlayer::displayAllSongs() {
@@ -183,20 +210,22 @@ void MusicPlayer::displayAllSongs() {
         return;
     }
     
-    displaySongList(allSongs);
+    displaySongList(allSongs, true);
 }
 
 void MusicPlayer::searchSongs(const std::string& query) {
     std::vector<Song> results;
+    std::vector<int> globalIndices;
     std::string lowerQuery = query;
     std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
     
-    for (const auto& song : allSongs) {
-        std::string songName = song.getDisplayName();
+    for (size_t i = 0; i < allSongs.size(); ++i) {
+        std::string songName = allSongs[i].getDisplayName();
         std::transform(songName.begin(), songName.end(), songName.begin(), ::tolower);
         
         if (songName.find(lowerQuery) != std::string::npos) {
-            results.push_back(song);
+            results.push_back(allSongs[i]);
+            globalIndices.push_back(static_cast<int>(i + 1));
         }
     }
     
@@ -204,7 +233,9 @@ void MusicPlayer::searchSongs(const std::string& query) {
         std::cout << "No songs found matching: " << query << std::endl;
     } else {
         std::cout << "Search results for '" << query << "':" << std::endl;
-        displaySongList(results);
+        for (size_t i = 0; i < results.size(); ++i) {
+            std::cout << globalIndices[i] << ". " << results[i].getDisplayName() << std::endl;
+        }
     }
 }
 
@@ -221,6 +252,7 @@ void MusicPlayer::playCurrentSong() {
     const Song& song = currentQueue[currentSongIndex];
     if (audioPlayer.loadSong(song)) {
         audioPlayer.play();
+        updateDiscordPresence();
     }
 }
 
@@ -230,10 +262,21 @@ void MusicPlayer::playNext() {
         return;
     }
     
-    currentSongIndex++;
-    if (currentSongIndex >= static_cast<int>(currentQueue.size())) {
-        currentSongIndex = 0; // Loop back to beginning
-        std::cout << "Reached end of queue, looping to beginning." << std::endl;
+    if (queueMode == QueueMode::RANDOM) {
+        randomPosition++;
+        if (randomPosition >= static_cast<int>(randomIndices.size())) {
+            // Generate new random order and continue
+            generateRandomIndices();
+            randomPosition = 0;
+            std::cout << "Generated new random order." << std::endl;
+        }
+        currentSongIndex = randomIndices[randomPosition];
+    } else {
+        currentSongIndex++;
+        if (currentSongIndex >= static_cast<int>(currentQueue.size())) {
+            currentSongIndex = 0; // Loop back to beginning
+            std::cout << "Reached end of queue, looping to beginning." << std::endl;
+        }
     }
     
     playCurrentSong();
@@ -245,10 +288,19 @@ void MusicPlayer::playPrevious() {
         return;
     }
     
-    currentSongIndex--;
-    if (currentSongIndex < 0) {
-        currentSongIndex = static_cast<int>(currentQueue.size()) - 1; // Loop to end
-        std::cout << "Reached beginning of queue, looping to end." << std::endl;
+    if (queueMode == QueueMode::RANDOM) {
+        randomPosition--;
+        if (randomPosition < 0) {
+            randomPosition = static_cast<int>(randomIndices.size()) - 1;
+            std::cout << "Reached beginning of random queue, looping to end." << std::endl;
+        }
+        currentSongIndex = randomIndices[randomPosition];
+    } else {
+        currentSongIndex--;
+        if (currentSongIndex < 0) {
+            currentSongIndex = static_cast<int>(currentQueue.size()) - 1; // Loop to end
+            std::cout << "Reached beginning of queue, looping to end." << std::endl;
+        }
     }
     
     playCurrentSong();
@@ -257,8 +309,10 @@ void MusicPlayer::playPrevious() {
 void MusicPlayer::pauseResume() {
     if (audioPlayer.isPlaying()) {
         audioPlayer.pause();
+        updateDiscordPresence();
     } else if (audioPlayer.isPaused()) {
         audioPlayer.resume();
+        updateDiscordPresence();
     } else {
         std::cout << "No song is currently playing." << std::endl;
     }
@@ -266,11 +320,13 @@ void MusicPlayer::pauseResume() {
 
 void MusicPlayer::stopPlayback() {
     audioPlayer.stop();
+    richPresence.setIdleState();
 }
 
 void MusicPlayer::setVolume(float volume) {
+    savedVolume = volume;
     audioPlayer.setVolume(volume);
-    std::cout << "Volume set to " << static_cast<int>(volume * 100) << "%" << std::endl;
+    std::cout << "Volume set to " << static_cast<int>(volume * 100) << "% (saved)" << std::endl;
 }
 
 void MusicPlayer::showCurrentSong() {
@@ -293,9 +349,19 @@ void MusicPlayer::showCurrentSong() {
         
         std::cout << " | Volume: " << static_cast<int>(audioPlayer.getVolume() * 100) << "%" << std::endl;
         
-        if (isUsingPlaylist) {
-            std::cout << "Playing from playlist: " << currentPlaylistName << std::endl;
+        std::string modeStr;
+        switch (queueMode) {
+            case QueueMode::ALL_SONGS:
+                modeStr = "All Songs";
+                break;
+            case QueueMode::PLAYLIST:
+                modeStr = "Playlist: " + currentPlaylistName;
+                break;
+            case QueueMode::RANDOM:
+                modeStr = "Random Mode";
+                break;
         }
+        std::cout << "Mode: " << modeStr << std::endl;
     } else {
         std::cout << "No song selected." << std::endl;
     }
@@ -308,21 +374,34 @@ void MusicPlayer::playFromQueue(int index) {
     }
     
     currentSongIndex = index;
+    
+    // Update random position if in random mode
+    if (queueMode == QueueMode::RANDOM) {
+        for (size_t i = 0; i < randomIndices.size(); ++i) {
+            if (randomIndices[i] == index) {
+                randomPosition = static_cast<int>(i);
+                break;
+            }
+        }
+    }
+    
     playCurrentSong();
 }
 
 void MusicPlayer::setQueueFromAllSongs() {
     currentQueue = allSongs;
-    isUsingPlaylist = false;
+    queueMode = QueueMode::ALL_SONGS;
     currentPlaylistName.clear();
-    std::cout << "Queue set to all songs (" << currentQueue.size() << " songs)" << std::endl;
+    currentSongIndex = -1;
+    std::cout << "Switched to all songs mode (" << currentQueue.size() << " songs)" << std::endl;
+    richPresence.setBrowsingState(static_cast<int>(allSongs.size()));
 }
 
 void MusicPlayer::setQueueFromPlaylist(const std::string& playlistName) {
     Playlist* playlist = PlaylistManager::getInstance().getPlaylist(playlistName);
     if (playlist && !playlist->isEmpty()) {
         currentQueue = playlist->getSongs();
-        isUsingPlaylist = true;
+        queueMode = QueueMode::PLAYLIST;
         currentPlaylistName = playlistName;
         currentSongIndex = -1;
         std::cout << "Queue set to playlist '" << playlistName << "' (" << currentQueue.size() << " songs)" << std::endl;
@@ -331,10 +410,38 @@ void MusicPlayer::setQueueFromPlaylist(const std::string& playlistName) {
     }
 }
 
+void MusicPlayer::setRandomMode() {
+    if (allSongs.empty()) {
+        std::cout << "No songs available for random mode!" << std::endl;
+        return;
+    }
+    
+    currentQueue = allSongs;
+    queueMode = QueueMode::RANDOM;
+    currentPlaylistName.clear();
+    generateRandomIndices();
+    currentSongIndex = randomIndices[0];
+    randomPosition = 0;
+    
+    std::cout << "Random mode enabled! Playing random song..." << std::endl;
+    playCurrentSong();
+}
+
+void MusicPlayer::generateRandomIndices() {
+    randomIndices.clear();
+    for (size_t i = 0; i < currentQueue.size(); ++i) {
+        randomIndices.push_back(static_cast<int>(i));
+    }
+    
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(randomIndices.begin(), randomIndices.end(), g);
+}
+
 void MusicPlayer::clearQueue() {
     currentQueue.clear();
     currentSongIndex = -1;
-    isUsingPlaylist = false;
+    queueMode = QueueMode::ALL_SONGS;
     currentPlaylistName.clear();
 }
 
@@ -345,15 +452,54 @@ void MusicPlayer::displayQueue() {
     }
     
     std::cout << "\nCurrent Queue";
-    if (isUsingPlaylist) {
-        std::cout << " (Playlist: " << currentPlaylistName << ")";
+    switch (queueMode) {
+        case QueueMode::ALL_SONGS:
+            std::cout << " (All Songs)";
+            break;
+        case QueueMode::PLAYLIST:
+            std::cout << " (Playlist: " << currentPlaylistName << ")";
+            break;
+        case QueueMode::RANDOM:
+            std::cout << " (Random Mode)";
+            break;
     }
     std::cout << ":" << std::endl;
     std::cout << "===========================================" << std::endl;
     
-    for (size_t i = 0; i < currentQueue.size(); ++i) {
-        std::string marker = (static_cast<int>(i) == currentSongIndex) ? " -> " : "    ";
-        std::cout << marker << (i + 1) << ". " << currentQueue[i].getDisplayName() << std::endl;
+    if (queueMode == QueueMode::RANDOM) {
+        // Show next few songs in random order
+        int showCount = std::min(10, static_cast<int>(randomIndices.size()));
+        for (int i = 0; i < showCount; ++i) {
+            int pos = (randomPosition + i) % static_cast<int>(randomIndices.size());
+            int songIdx = randomIndices[pos];
+            std::string marker = (i == 0) ? " -> " : "    ";
+            std::cout << marker << (i + 1) << ". " << currentQueue[songIdx].getDisplayName() << std::endl;
+        }
+        if (randomIndices.size() > 10) {
+            std::cout << "    ... and " << (randomIndices.size() - 10) << " more songs in random order" << std::endl;
+        }
+    } else {
+        for (size_t i = 0; i < currentQueue.size(); ++i) {
+            std::string marker = (static_cast<int>(i) == currentSongIndex) ? " -> " : "    ";
+            std::cout << marker << (i + 1) << ". " << currentQueue[i].getDisplayName() << std::endl;
+        }
+    }
+}
+
+void MusicPlayer::updateDiscordPresence() {
+    if (currentSongIndex >= 0 && currentSongIndex < static_cast<int>(currentQueue.size())) {
+        const Song& song = currentQueue[currentSongIndex];
+        bool isPlaying = audioPlayer.isPlaying();
+        
+        bool inPlaylist = (queueMode == QueueMode::PLAYLIST);
+        std::string playlistName = inPlaylist ? currentPlaylistName : "";
+        
+        if (isPlaying) {
+            richPresence.setSongPlaying(song.title, song.artist, inPlaylist, playlistName);
+        }       
+        else {
+            richPresence.setSongPaused(song.title, song.artist, inPlaylist, playlistName);
+        }
     }
 }
 
@@ -394,7 +540,7 @@ void MusicPlayer::playPlaylist(const std::string& name) {
     }
 }
 
-void MusicPlayer::displaySongList(const std::vector<Song>& songs) {
+void MusicPlayer::displaySongList(const std::vector<Song>& songs, bool showGlobalIndex) {
     if (songs.empty()) {
         std::cout << "No songs to display." << std::endl;
         return;
@@ -404,7 +550,11 @@ void MusicPlayer::displaySongList(const std::vector<Song>& songs) {
     std::cout << "================================" << std::endl;
     
     for (size_t i = 0; i < songs.size(); ++i) {
-        std::cout << (i + 1) << ". " << songs[i].getDisplayName() << std::endl;
+        if (showGlobalIndex) {
+            std::cout << (i + 1) << ". " << songs[i].getDisplayName() << std::endl;
+        } else {
+            std::cout << (i + 1) << ". " << songs[i].getDisplayName() << std::endl;
+        }
         
         // Show in batches of 20 to avoid overwhelming output
         if ((i + 1) % 20 == 0 && i + 1 < songs.size()) {
@@ -441,24 +591,43 @@ void MusicPlayer::showHelp() {
     displayMenu();
 }
 
+void MusicPlayer::saveSettings() {
+    std::ofstream file("settings.txt");
+    if (file.is_open()) {
+        file << "volume=" << savedVolume << std::endl;
+        file.close();
+    }
+}
+
+void MusicPlayer::loadSettings() {
+    std::ifstream file("settings.txt");
+    if (file.is_open()) {
+        std::string line;
+        while (std::getline(file, line)) {
+            if (line.find("volume=") == 0) {
+                try {
+                    savedVolume = std::stof(line.substr(7));
+                    if (savedVolume < 0.0f) savedVolume = 0.0f;
+                    if (savedVolume > 1.0f) savedVolume = 1.0f;
+                } catch (...) {
+                    savedVolume = 1.0f;
+                }
+            }
+        }
+        file.close();
+    }
+}
+
 void MusicPlayer::update() {
     audioPlayer.update();
     
-    // Auto-advance to next song if current song finished
-    if (audioPlayer.getState() == PlaybackState::STOPPED && 
-        currentSongIndex >= 0 && !currentQueue.empty()) {
-        
-        // Check if we were actually playing (not manually stopped)
-        static bool wasPlaying = false;
-        if (wasPlaying) {
-            std::cout << "\nSong finished, playing next..." << std::endl;
-            playNext();
-        }
-        wasPlaying = false;
-    } else if (audioPlayer.getState() == PlaybackState::PLAYING) {
-        static bool wasPlaying = true;
+    // Check if song finished naturally (not manually stopped)
+    if (audioPlayer.hasFinished() && currentSongIndex >= 0 && !currentQueue.empty()) {
+        std::cout << "\nSong finished, playing next..." << std::endl;
+        playNext();
+        return; // Exit early after starting next song
     }
     
     // Small delay to prevent excessive CPU usage
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Reduced delay for better responsiveness
 }

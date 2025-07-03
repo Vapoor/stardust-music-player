@@ -4,16 +4,17 @@
 
 #include "../headers/audioPlayer.hpp"
 #include <iostream>
+#include <chrono>
 
 // Include FMOD headers - you'll need to download and include these
 #ifdef FMOD_AVAILABLE
-#include "fmod.hpp"
+#include "fmod.h"
 #include "fmod_errors.h"
 #endif
 
 AudioPlayer::AudioPlayer() 
     : fmodSystem(nullptr), currentSound(nullptr), currentChannel(nullptr),
-      state(PlaybackState::STOPPED), volume(1.0f) {
+      state(PlaybackState::STOPPED), volume(1.0f), songFinished(false) {
 }
 
 AudioPlayer::~AudioPlayer() {
@@ -32,12 +33,12 @@ bool AudioPlayer::initialize() {
 void AudioPlayer::cleanup() {
 #ifdef FMOD_AVAILABLE
     if (currentSound) {
-        currentSound->release();
+        FMOD_Sound_Release(currentSound);
         currentSound = nullptr;
     }
     
     if (fmodSystem) {
-        fmodSystem->release();
+        FMOD_System_Release(fmodSystem);
         fmodSystem = nullptr;
     }
 #endif
@@ -45,6 +46,7 @@ void AudioPlayer::cleanup() {
 
 bool AudioPlayer::loadSong(const Song& song) {
     currentSong = song;
+    songFinished = false;  // Reset finished flag
     
 #ifdef FMOD_AVAILABLE
     if (!fmodSystem) {
@@ -54,12 +56,12 @@ bool AudioPlayer::loadSong(const Song& song) {
     
     // Release previous sound
     if (currentSound) {
-        currentSound->release();
+        FMOD_Sound_Release(currentSound);
         currentSound = nullptr;
     }
     
     // Load new sound
-    FMOD_RESULT result = fmodSystem->createSound(song.filePath.c_str(), FMOD_DEFAULT, 0, &currentSound);
+    FMOD_RESULT result = FMOD_System_CreateSound(fmodSystem, song.filePath.c_str(), FMOD_DEFAULT, 0, &currentSound);
     if (result != FMOD_OK) {
         std::cout << "Failed to load song: " << song.filePath << std::endl;
         return false;
@@ -80,16 +82,18 @@ void AudioPlayer::play() {
         return;
     }
     
-    FMOD_RESULT result = fmodSystem->playSound(currentSound, 0, false, &currentChannel);
+    FMOD_RESULT result = FMOD_System_PlaySound(fmodSystem, currentSound, 0, 0, &currentChannel);
     if (result == FMOD_OK) {
         state = PlaybackState::PLAYING;
-        currentChannel->setVolume(volume);
+        songFinished = false;  // Reset finished flag when starting playback
+        FMOD_Channel_SetVolume(currentChannel, volume);
         std::cout << "Playing: " << currentSong.getDisplayName() << std::endl;
     } else {
         std::cout << "Failed to play song!" << std::endl;
     }
 #else
     state = PlaybackState::PLAYING;
+    songFinished = false;
     std::cout << "Simulated playing: " << currentSong.getDisplayName() << std::endl;
 #endif
 }
@@ -97,7 +101,7 @@ void AudioPlayer::play() {
 void AudioPlayer::pause() {
 #ifdef FMOD_AVAILABLE
     if (currentChannel && state == PlaybackState::PLAYING) {
-        currentChannel->setPaused(true);
+        FMOD_Channel_SetPaused(currentChannel, 1);
         state = PlaybackState::PAUSED;
         std::cout << "Paused" << std::endl;
     }
@@ -112,7 +116,7 @@ void AudioPlayer::pause() {
 void AudioPlayer::resume() {
 #ifdef FMOD_AVAILABLE
     if (currentChannel && state == PlaybackState::PAUSED) {
-        currentChannel->setPaused(false);
+        FMOD_Channel_SetPaused(currentChannel, 0);
         state = PlaybackState::PLAYING;
         std::cout << "Resumed" << std::endl;
     }
@@ -127,13 +131,15 @@ void AudioPlayer::resume() {
 void AudioPlayer::stop() {
 #ifdef FMOD_AVAILABLE
     if (currentChannel) {
-        currentChannel->stop();
+        FMOD_Channel_Stop(currentChannel);
         currentChannel = nullptr;
         state = PlaybackState::STOPPED;
+        songFinished = false;  // Manual stop, not natural finish
         std::cout << "Stopped" << std::endl;
     }
 #else
     state = PlaybackState::STOPPED;
+    songFinished = false;
     std::cout << "Simulated stop" << std::endl;
 #endif
 }
@@ -150,6 +156,10 @@ bool AudioPlayer::isPaused() const {
     return state == PlaybackState::PAUSED;
 }
 
+bool AudioPlayer::hasFinished() const {
+    return songFinished;
+}
+
 void AudioPlayer::setVolume(float vol) {
     volume = vol;
     if (volume < 0.0f) volume = 0.0f;
@@ -157,7 +167,7 @@ void AudioPlayer::setVolume(float vol) {
     
 #ifdef FMOD_AVAILABLE
     if (currentChannel) {
-        currentChannel->setVolume(volume);
+        FMOD_Channel_SetVolume(currentChannel, volume);
     }
 #endif
 }
@@ -170,7 +180,7 @@ unsigned int AudioPlayer::getPosition() const {
 #ifdef FMOD_AVAILABLE
     if (currentChannel) {
         unsigned int position = 0;
-        currentChannel->getPosition(&position, FMOD_TIMEUNIT_MS);
+        FMOD_Channel_GetPosition(currentChannel, &position, FMOD_TIMEUNIT_MS);
         return position;
     }
 #endif
@@ -181,7 +191,7 @@ unsigned int AudioPlayer::getLength() const {
 #ifdef FMOD_AVAILABLE
     if (currentSound) {
         unsigned int length = 0;
-        currentSound->getLength(&length, FMOD_TIMEUNIT_MS);
+        FMOD_Sound_GetLength(currentSound, &length, FMOD_TIMEUNIT_MS);
         return length;
     }
 #endif
@@ -191,7 +201,7 @@ unsigned int AudioPlayer::getLength() const {
 void AudioPlayer::setPosition(unsigned int positionMs) {
 #ifdef FMOD_AVAILABLE
     if (currentChannel) {
-        currentChannel->setPosition(positionMs, FMOD_TIMEUNIT_MS);
+        FMOD_Channel_SetPosition(currentChannel, positionMs, FMOD_TIMEUNIT_MS);
     }
 #endif
 }
@@ -203,30 +213,47 @@ std::string AudioPlayer::getCurrentSongName() const {
 void AudioPlayer::update() {
 #ifdef FMOD_AVAILABLE
     if (fmodSystem) {
-        fmodSystem->update();
+        FMOD_System_Update(fmodSystem);
         
         // Check if song finished playing
         if (currentChannel && state == PlaybackState::PLAYING) {
-            bool isPlaying = false;
-            currentChannel->isPlaying(&isPlaying);
+            FMOD_BOOL isPlaying = 0;
+            FMOD_Channel_IsPlaying(currentChannel, &isPlaying);
             if (!isPlaying) {
+                // Song finished naturally
                 state = PlaybackState::STOPPED;
+                songFinished = true;  // Mark as finished for auto-advance
                 currentChannel = nullptr;
+                std::cout << "Song finished naturally" << std::endl;
             }
         }
+    }
+#else
+    // Simulate song finishing after 10 seconds for testing
+    static auto lastPlayTime = std::chrono::steady_clock::now();
+    if (state == PlaybackState::PLAYING) {
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - lastPlayTime).count();
+        if (elapsed >= 10) {  // Simulate 10-second songs for testing
+            state = PlaybackState::STOPPED;
+            songFinished = true;
+            std::cout << "Simulated song finished" << std::endl;
+        }
+    } else {
+        lastPlayTime = std::chrono::steady_clock::now();
     }
 #endif
 }
 
 #ifdef FMOD_AVAILABLE
 bool AudioPlayer::initializeFMOD() {
-    FMOD_RESULT result = FMOD::System_Create(&fmodSystem);
+    FMOD_RESULT result = FMOD_System_Create(&fmodSystem, FMOD_VERSION);
     if (result != FMOD_OK) {
         std::cout << "Failed to create FMOD system!" << std::endl;
         return false;
     }
     
-    result = fmodSystem->init(32, FMOD_INIT_NORMAL, 0);
+    result = FMOD_System_Init(fmodSystem, 32, FMOD_INIT_NORMAL, 0);
     if (result != FMOD_OK) {
         std::cout << "Failed to initialize FMOD system!" << std::endl;
         return false;
