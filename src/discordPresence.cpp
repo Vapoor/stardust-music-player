@@ -5,7 +5,7 @@
 
 // Discord Game SDK includes (only if available)
 #ifdef DISCORD_AVAILABLE
-#include "../lib/discord_game_sdk/cpp/discord.h"
+#include "discord.h"
 #endif
 
 // Your Discord Application ID
@@ -172,11 +172,23 @@ void RichPresence::refreshLoop() {
             // Apply current state to Discord
             applyCurrentState();
             
-            // Wait for next refresh
-            std::this_thread::sleep_for(refreshInterval);
+            // Wait for next refresh, but check shouldRunLoop every 100ms for quick exit
+            int totalWaitMs = refreshInterval.count() * 1000;
+            while (totalWaitMs > 0 && shouldRunLoop.load()) {
+                int sleepMs = (totalWaitMs > 100) ? 100 : totalWaitMs;
+                std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+                totalWaitMs -= sleepMs;
+            }
         } catch (const std::exception& e) {
             std::cout << "Error in refresh loop: " << e.what() << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(1)); // Wait before retry
+            
+            // Even during error recovery, allow quick exit
+            int totalWaitMs = 1000;
+            while (totalWaitMs > 0 && shouldRunLoop.load()) {
+                int sleepMs = (totalWaitMs > 100) ? 100 : totalWaitMs;
+                std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+                totalWaitMs -= sleepMs;
+            }
         }
     }
 }
@@ -208,7 +220,7 @@ void RichPresence::applyCurrentState() {
         lastAppliedDetails = details;
         lastAppliedState = state;
         lastAppliedSmallImage = smallImageKey;
-    } 
+    }
 #else
     // Console fallback
     std::cout << "\n[Discord Status] " << details << " | " << state << "\n";
@@ -226,9 +238,9 @@ void RichPresence::getDiscordStrings(const PresenceData& data, std::string& deta
         case PresenceState::PLAYING:
             details = "♪ " + data.artist + " - " + data.songName;
             if (data.isInPlaylist && !data.playlistName.empty()) {
-                state = "Playlist: " + data.playlistName;
+                state = "Playlist: " + data.playlistName + " • Made by Vapor";
             } else {
-                state = "Browsing osu! collection";
+                state = "Browsing osu! collection • Made by Vapor";
             }
             smallImageKey = "play_icon";
             smallImageText = "Playing";
@@ -237,9 +249,9 @@ void RichPresence::getDiscordStrings(const PresenceData& data, std::string& deta
         case PresenceState::PAUSED:
             details = "⏸ " + data.artist + " - " + data.songName;
             if (data.isInPlaylist && !data.playlistName.empty()) {
-                state = "Playlist: " + data.playlistName;
+                state = "Playlist: " + data.playlistName + " • Made by Vapor";
             } else {
-                state = "Browsing osu! collection";
+                state = "Browsing osu! collection • Made by Vapor";
             }
             smallImageKey = "pause_icon";
             smallImageText = "Paused";
@@ -247,7 +259,7 @@ void RichPresence::getDiscordStrings(const PresenceData& data, std::string& deta
             
         case PresenceState::BROWSING:
             details = "Exploring music library";
-            state = "Browsing " + std::to_string(data.totalSongs) + " songs";
+            state = "Browsing " + std::to_string(data.totalSongs) + " songs • Made by Vapor";
             smallImageKey = "";
             smallImageText = "";
             break;
@@ -255,7 +267,7 @@ void RichPresence::getDiscordStrings(const PresenceData& data, std::string& deta
         case PresenceState::IDLE:
         default:
             details = "Idle";
-            state = "Ready to listen to osu! beats";
+            state = "Ready to listen to osu! beats • Made by Vapor";
             smallImageKey = "";
             smallImageText = "";
             break;
@@ -308,6 +320,9 @@ void RichPresence::setActivity(const std::string& details, const std::string& st
     // Set activity type
     activity.type = DiscordActivityType_Listening;
     
+    // Note: Buttons are not supported in this Discord SDK version
+    // The presence will show without clickable buttons
+    
     // Update activity
     activities->update_activity(activities, &activity, nullptr, [](void* data, EDiscordResult result) {
         (void)data; // Suppress unused parameter warning
@@ -337,7 +352,6 @@ void RichPresence::checkConnection() {
         isConnected = (activities != nullptr);
         
         if (!wasConnected && isConnected) {
-            std::cout << "Discord Rich Presence connected!" << std::endl;
         } else if (wasConnected && !isConnected) {
             std::cout << "Discord Rich Presence disconnected!" << std::endl;
         }

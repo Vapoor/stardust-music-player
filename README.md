@@ -61,6 +61,9 @@ A console-based music player specifically designed for osu! beatmap collections.
    - `search <query>` - Search for songs
    - `vol <0-100>` - Set volume
    - `current` - Show current song info
+   - `all` - Switch back to all songs mode
+   - `random` - Enable random mode
+   - `timer` - Toggle progress timer display
    - `queue` - Show current playback queue
    - `quit` - Exit program
 

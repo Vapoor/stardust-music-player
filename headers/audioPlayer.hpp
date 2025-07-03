@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <chrono>
 #include "song.hpp"
 
 // Forward declaration for FMOD types
@@ -38,7 +39,7 @@ public:
     PlaybackState getState() const;
     bool isPlaying() const;
     bool isPaused() const;
-    bool hasFinished() const;  // New method to check if song finished
+    bool hasFinished() const;
     
     void setVolume(float volume); // 0.0 to 1.0
     float getVolume() const;
@@ -48,9 +49,15 @@ public:
     unsigned int getLength() const;
     void setPosition(unsigned int positionMs);
     
+    // New timer-related methods
+    unsigned int getCurrentPlaybackPosition() const;
+    unsigned int getRemainingTime() const;
+    std::string formatTime(unsigned int milliseconds) const;
+    std::string getProgressString() const;
+    
     std::string getCurrentSongName() const;
     
-    void update(); // Call this regularly to update FMOD
+    void update(); // Call this regularly to update FMOD and check timing
     
 private:
 #ifdef FMOD_AVAILABLE
@@ -66,7 +73,13 @@ private:
     Song currentSong;
     PlaybackState state;
     float volume;
-    bool songFinished;  // Track if current song finished naturally
+    bool songFinished;
+    
+    // Timer-related members
+    std::chrono::steady_clock::time_point songStartTime;
+    std::chrono::steady_clock::time_point pauseStartTime;
+    std::chrono::milliseconds pausedDuration;
+    unsigned int songLengthMs;
     
     bool initializeFMOD();
 };

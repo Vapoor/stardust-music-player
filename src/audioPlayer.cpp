@@ -1,7 +1,4 @@
-// NOTE: This implementation requires FMOD library
-// Download FMOD from: https://www.fmod.com/download
-// Add fmod.dll to your project directory and link against fmod_vc.lib
-
+// Enhanced audioPlayer.cpp with timer support
 #include "../headers/audioPlayer.hpp"
 #include <iostream>
 #include <chrono>
@@ -14,7 +11,8 @@
 
 AudioPlayer::AudioPlayer() 
     : fmodSystem(nullptr), currentSound(nullptr), currentChannel(nullptr),
-      state(PlaybackState::STOPPED), volume(1.0f), songFinished(false) {
+      state(PlaybackState::STOPPED), volume(1.0f), songFinished(false),
+      songStartTime(std::chrono::steady_clock::now()), songLengthMs(0) {
 }
 
 AudioPlayer::~AudioPlayer() {
@@ -46,7 +44,8 @@ void AudioPlayer::cleanup() {
 
 bool AudioPlayer::loadSong(const Song& song) {
     currentSong = song;
-    songFinished = false;  // Reset finished flag
+    songFinished = false;
+    songLengthMs = 0;
     
 #ifdef FMOD_AVAILABLE
     if (!fmodSystem) {
@@ -67,10 +66,17 @@ bool AudioPlayer::loadSong(const Song& song) {
         return false;
     }
     
-    std::cout << "Loaded: " << song.getDisplayName() << std::endl;
+    // Get song length
+    unsigned int length = 0;
+    FMOD_Sound_GetLength(currentSound, &length, FMOD_TIMEUNIT_MS);
+    songLengthMs = length;
+    
+    std::cout << "Loaded: " << song.getDisplayName() << " (Length: " << formatTime(songLengthMs) << ")" << std::endl;
     return true;
 #else
-    std::cout << "Simulated loading: " << song.getDisplayName() << std::endl;
+    // Simulate different song lengths for testing
+    songLengthMs = 30000 + (song.id % 5) * 15000; // 30-90 seconds based on song ID
+    std::cout << "Simulated loading: " << song.getDisplayName() << " (Length: " << formatTime(songLengthMs) << ")" << std::endl;
     return true;
 #endif
 }
@@ -85,16 +91,20 @@ void AudioPlayer::play() {
     FMOD_RESULT result = FMOD_System_PlaySound(fmodSystem, currentSound, 0, 0, &currentChannel);
     if (result == FMOD_OK) {
         state = PlaybackState::PLAYING;
-        songFinished = false;  // Reset finished flag when starting playback
+        songFinished = false;
+        songStartTime = std::chrono::steady_clock::now();
+        pausedDuration = std::chrono::milliseconds(0);
         FMOD_Channel_SetVolume(currentChannel, volume);
-        std::cout << "Playing: " << currentSong.getDisplayName() << std::endl;
+        std::cout << "Playing: " << currentSong.getDisplayName() << " | Length: " << formatTime(songLengthMs) << std::endl;
     } else {
         std::cout << "Failed to play song!" << std::endl;
     }
 #else
     state = PlaybackState::PLAYING;
     songFinished = false;
-    std::cout << "Simulated playing: " << currentSong.getDisplayName() << std::endl;
+    songStartTime = std::chrono::steady_clock::now();
+    pausedDuration = std::chrono::milliseconds(0);
+    std::cout << "Simulated playing: " << currentSong.getDisplayName() << " | Length: " << formatTime(songLengthMs) << std::endl;
 #endif
 }
 
@@ -103,11 +113,13 @@ void AudioPlayer::pause() {
     if (currentChannel && state == PlaybackState::PLAYING) {
         FMOD_Channel_SetPaused(currentChannel, 1);
         state = PlaybackState::PAUSED;
+        pauseStartTime = std::chrono::steady_clock::now();
         std::cout << "Paused" << std::endl;
     }
 #else
     if (state == PlaybackState::PLAYING) {
         state = PlaybackState::PAUSED;
+        pauseStartTime = std::chrono::steady_clock::now();
         std::cout << "Simulated pause" << std::endl;
     }
 #endif
@@ -118,11 +130,21 @@ void AudioPlayer::resume() {
     if (currentChannel && state == PlaybackState::PAUSED) {
         FMOD_Channel_SetPaused(currentChannel, 0);
         state = PlaybackState::PLAYING;
+        
+        // Add the paused duration to total paused time
+        auto pauseDuration = std::chrono::steady_clock::now() - pauseStartTime;
+        pausedDuration += std::chrono::duration_cast<std::chrono::milliseconds>(pauseDuration);
+        
         std::cout << "Resumed" << std::endl;
     }
 #else
     if (state == PlaybackState::PAUSED) {
         state = PlaybackState::PLAYING;
+        
+        // Add the paused duration to total paused time
+        auto pauseDuration = std::chrono::steady_clock::now() - pauseStartTime;
+        pausedDuration += std::chrono::duration_cast<std::chrono::milliseconds>(pauseDuration);
+        
         std::cout << "Simulated resume" << std::endl;
     }
 #endif
@@ -134,7 +156,7 @@ void AudioPlayer::stop() {
         FMOD_Channel_Stop(currentChannel);
         currentChannel = nullptr;
         state = PlaybackState::STOPPED;
-        songFinished = false;  // Manual stop, not natural finish
+        songFinished = false;
         std::cout << "Stopped" << std::endl;
     }
 #else
@@ -184,18 +206,11 @@ unsigned int AudioPlayer::getPosition() const {
         return position;
     }
 #endif
-    return 0;
+    return getCurrentPlaybackPosition();
 }
 
 unsigned int AudioPlayer::getLength() const {
-#ifdef FMOD_AVAILABLE
-    if (currentSound) {
-        unsigned int length = 0;
-        FMOD_Sound_GetLength(currentSound, &length, FMOD_TIMEUNIT_MS);
-        return length;
-    }
-#endif
-    return 0;
+    return songLengthMs;
 }
 
 void AudioPlayer::setPosition(unsigned int positionMs) {
@@ -210,6 +225,56 @@ std::string AudioPlayer::getCurrentSongName() const {
     return currentSong.getDisplayName();
 }
 
+unsigned int AudioPlayer::getCurrentPlaybackPosition() const {
+    if (state == PlaybackState::STOPPED) {
+        return 0;
+    }
+    
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - songStartTime);
+    
+    // Subtract paused duration
+    auto actualElapsed = elapsed - pausedDuration;
+    
+    // If currently paused, don't add current pause time
+    if (state == PlaybackState::PAUSED) {
+        auto currentPauseDuration = std::chrono::duration_cast<std::chrono::milliseconds>(now - pauseStartTime);
+        actualElapsed -= currentPauseDuration;
+    }
+    
+    return static_cast<unsigned int>(std::max(0LL, actualElapsed.count()));
+}
+
+unsigned int AudioPlayer::getRemainingTime() const {
+    if (songLengthMs == 0) return 0;
+    
+    unsigned int currentPos = getCurrentPlaybackPosition();
+    if (currentPos >= songLengthMs) return 0;
+    
+    return songLengthMs - currentPos;
+}
+
+std::string AudioPlayer::formatTime(unsigned int milliseconds) const {
+    unsigned int totalSeconds = milliseconds / 1000;
+    unsigned int minutes = totalSeconds / 60;
+    unsigned int seconds = totalSeconds % 60;
+    
+    char buffer[16];
+    snprintf(buffer, sizeof(buffer), "%u:%02u", minutes, seconds);
+    return std::string(buffer);
+}
+
+std::string AudioPlayer::getProgressString() const {
+    if (state == PlaybackState::STOPPED) {
+        return "Stopped";
+    }
+    
+    unsigned int currentPos = getCurrentPlaybackPosition();
+    unsigned int remaining = getRemainingTime();
+    
+    return formatTime(currentPos) + " / " + formatTime(songLengthMs) + " (Remaining: " + formatTime(remaining) + ")";
+}
+
 void AudioPlayer::update() {
 #ifdef FMOD_AVAILABLE
     if (fmodSystem) {
@@ -220,27 +285,24 @@ void AudioPlayer::update() {
             FMOD_BOOL isPlaying = 0;
             FMOD_Channel_IsPlaying(currentChannel, &isPlaying);
             if (!isPlaying) {
-                // Song finished naturally
                 state = PlaybackState::STOPPED;
-                songFinished = true;  // Mark as finished for auto-advance
+                songFinished = true;
                 currentChannel = nullptr;
                 std::cout << "Song finished naturally" << std::endl;
             }
         }
     }
 #else
-    // Simulate song finishing after 10 seconds for testing
-    static auto lastPlayTime = std::chrono::steady_clock::now();
-    if (state == PlaybackState::PLAYING) {
-        auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - lastPlayTime).count();
-        if (elapsed >= 10) {  // Simulate 10-second songs for testing
+    // Simulate song finishing based on our timer
+    if (state == PlaybackState::PLAYING && songLengthMs > 0) {
+        unsigned int currentPos = getCurrentPlaybackPosition();
+        
+        // Add 1 second buffer as requested
+        if (currentPos >= songLengthMs + 1000) {
             state = PlaybackState::STOPPED;
             songFinished = true;
-            std::cout << "Simulated song finished" << std::endl;
+            std::cout << "Simulated song finished naturally" << std::endl;
         }
-    } else {
-        lastPlayTime = std::chrono::steady_clock::now();
     }
 #endif
 }

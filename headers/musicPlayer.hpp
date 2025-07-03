@@ -34,6 +34,7 @@ private:
     QueueMode queueMode;
     std::string currentPlaylistName;
     float savedVolume;               // Persistent volume
+    bool showProgressTimer;          // Show progress timer
     
     void displayMenu();
     void processCommand(const std::string& command);
@@ -51,6 +52,11 @@ private:
     void stopPlayback();
     void setVolume(float volume);
     void showCurrentSong();
+    
+    // Display functions
+    void displayCurrentProgress();
+    
+    int getSongDisplayIndex(const Song& song);
     
     // Queue management
     void playFromQueue(int index);
