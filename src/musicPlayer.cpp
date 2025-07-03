@@ -56,14 +56,20 @@ void MusicPlayer::run() {
             displayCurrentProgress();
         }
         
-        std::cout << "\n> ";
-        std::getline(std::cin, input);
-        
-        if (input == "quit" || input == "exit") {
-            break;
+        // Check for input without blocking
+        if (hasInput()) {
+            std::cout << "\n> ";
+            std::getline(std::cin, input);
+            
+            if (input == "quit" || input == "exit") {
+                break;
+            }
+            
+            processCommand(input);
+        } else {
+            // Small delay to prevent excessive CPU usage
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        
-        processCommand(input);
     }
     
     // Save playlists and settings before exiting
@@ -269,11 +275,25 @@ void MusicPlayer::playCurrentSong() {
     const Song& song = currentQueue[currentSongIndex];
     if (audioPlayer.loadSong(song)) {
         audioPlayer.play();
+        displayPlayingMessage();
         updateDiscordPresence();
     }
 }
 
-
+void MusicPlayer::displayPlayingMessage() {
+    if (currentSongIndex >= 0 && currentSongIndex < static_cast<int>(currentQueue.size())) {
+        const Song& song = currentQueue[currentSongIndex];
+        
+        // Get the song index in the original queue for display
+        int displayIndex = getSongDisplayIndex(song);
+        
+        std::cout << "Playing: ";
+        if (displayIndex > 0) {
+            std::cout << displayIndex << ". ";
+        }
+        std::cout << song.getDisplayName() << " | Length: " << audioPlayer.formatTime(audioPlayer.getLength()) << std::endl;
+    }
+}
 
 void MusicPlayer::displayCurrentProgress() {
     if (currentSongIndex >= 0 && currentSongIndex < static_cast<int>(currentQueue.size())) {
@@ -295,22 +315,9 @@ void MusicPlayer::displayCurrentProgress() {
 }
 
 int MusicPlayer::getSongDisplayIndex(const Song& song) {
-    // In all songs mode, use the global song ID
-    if (queueMode == QueueMode::ALL_SONGS) {
-        return song.id;
-    }
-    
-    // In playlist mode, use the position in the playlist
-    if (queueMode == QueueMode::PLAYLIST) {
-        for (size_t i = 0; i < currentQueue.size(); ++i) {
-            if (currentQueue[i] == song) {
-                return static_cast<int>(i + 1);
-            }
-        }
-    }
-    
-    // In random mode, don't show an index
-    return -1;
+    // Always show global song ID for easy playlist management
+    // This allows users to add songs to playlists regardless of current mode
+    return song.id;
 }
 
 void MusicPlayer::playNext() {
@@ -537,13 +544,14 @@ void MusicPlayer::displayQueue() {
     std::cout << "===========================================" << std::endl;
     
     if (queueMode == QueueMode::RANDOM) {
-        // Show next few songs in random order
+        // Show next few songs in random order WITH their global IDs
         int showCount = std::min(10, static_cast<int>(randomIndices.size()));
         for (int i = 0; i < showCount; ++i) {
             int pos = (randomPosition + i) % static_cast<int>(randomIndices.size());
             int songIdx = randomIndices[pos];
+            const Song& song = currentQueue[songIdx];
             std::string marker = (i == 0) ? " -> " : "    ";
-            std::cout << marker << (i + 1) << ". " << currentQueue[songIdx].getDisplayName() << std::endl;
+            std::cout << marker << song.id << ". " << song.getDisplayName() << std::endl;
         }
         if (randomIndices.size() > 10) {
             std::cout << "    ... and " << (randomIndices.size() - 10) << " more songs in random order" << std::endl;
@@ -706,11 +714,30 @@ void MusicPlayer::update() {
     
     // Check if song finished naturally (not manually stopped)
     if (audioPlayer.hasFinished() && currentSongIndex >= 0 && !currentQueue.empty()) {
-        std::cout << "\nSong finished, auto-advancing to next..." << std::endl;
+        std::cout << "\n\nSong finished, auto-advancing to next..." << std::endl;
         playNext();
         return; // Exit early after starting next song
     }
     
     // Small delay to prevent excessive CPU usage
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+
+bool MusicPlayer::hasInput() {
+    // Cross-platform input checking
+#ifdef _WIN32
+    return _kbhit();
+#else
+    // Unix/Linux version
+    fd_set readfds;
+    struct timeval timeout;
+    
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+    
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+    
+    return select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout) > 0;
+#endif
 }

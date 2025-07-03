@@ -71,7 +71,7 @@ bool AudioPlayer::loadSong(const Song& song) {
     FMOD_Sound_GetLength(currentSound, &length, FMOD_TIMEUNIT_MS);
     songLengthMs = length;
     
-    std::cout << "Loaded: " << song.getDisplayName() << " (Length: " << formatTime(songLengthMs) << ")" << std::endl;
+    std::cout << "Loading . . ." << std::endl;
     return true;
 #else
     // Simulate different song lengths for testing
@@ -95,7 +95,6 @@ void AudioPlayer::play() {
         songStartTime = std::chrono::steady_clock::now();
         pausedDuration = std::chrono::milliseconds(0);
         FMOD_Channel_SetVolume(currentChannel, volume);
-        std::cout << "Playing: " << currentSong.getDisplayName() << " | Length: " << formatTime(songLengthMs) << std::endl;
     } else {
         std::cout << "Failed to play song!" << std::endl;
     }

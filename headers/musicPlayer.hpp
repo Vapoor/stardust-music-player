@@ -1,3 +1,4 @@
+// Enhanced musicPlayer.hpp with timer and display features
 #ifndef MUSICPLAYER_HPP
 #define MUSICPLAYER_HPP
 
@@ -7,6 +8,14 @@
 #include "audioPlayer.hpp"
 #include "playlist.hpp"
 #include "discordPresence.hpp"
+
+// Platform-specific includes for input detection
+#ifdef _WIN32
+#include <conio.h>
+#else
+#include <sys/select.h>
+#include <unistd.h>
+#endif
 
 enum class QueueMode {
     ALL_SONGS,      // Playing all songs
@@ -54,8 +63,8 @@ private:
     void showCurrentSong();
     
     // Display functions
+    void displayPlayingMessage();
     void displayCurrentProgress();
-    
     int getSongDisplayIndex(const Song& song);
     
     // Queue management
@@ -87,6 +96,7 @@ private:
     void showHelp();
     void saveSettings();
     void loadSettings();
+    bool hasInput(); // Check for keyboard input without blocking
     
     void update(); // Called regularly to update audio and check for song end
 };
