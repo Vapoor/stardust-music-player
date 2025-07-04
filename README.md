@@ -19,7 +19,16 @@ A console-based music player specifically designed for osu! beatmap collections.
 - Windows (99% sure you got this requirement)
 - x64 Native Tools for VS 2022 | [Download Here](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 - FMOD Engine Library | [Download Here](https://www.fmod.com/download)
-## Installation
+
+## Installation for Users
+
+1. **Download the latest [release](https://github.com/Vapoor/osulistener/releases)**
+
+2. **Uncompress the .rar and simply start the .exe !**
+
+
+
+## Installation for Developpers
 
 ### FMOD Lib
 
@@ -113,7 +122,6 @@ If you want to show to everyone that you are using my application (which is kind
 
 2. Extraction the library into the project into lib folder. **You need to create the lib folder if not already done**. The path should be ```root/lib/discord_sdk_game```
 
-3. Install the application through this [link](https://discord.com/oauth2/authorize?client_id=1389957827065548892) then add it to your discord applications.
 
 Now rebuild the app, the .bat should inform you if he found or not the SDK. If yes, you should now see your profile changing based on what your listening !
 
