@@ -93,6 +93,7 @@ void MusicPlayer::displayMenu() {
     std::cout << "  play - Resume/play current song" << std::endl;
     std::cout << "  pause - Pause playback" << std::endl;
     std::cout << "  stop - Stop playback" << std::endl;
+    std::cout << "  loop - Loop the current song" << std::endl;
     std::cout << "  next - Next song" << std::endl;
     std::cout << "  prev - Previous song" << std::endl;
     std::cout << "  vol <0-100> - Set volume (persistent)" << std::endl;
@@ -139,6 +140,9 @@ void MusicPlayer::processCommand(const std::string& command) {
     }
     else if (cmd == "random") {
         setRandomMode();
+    }
+    else if (cmd == "loop") {
+        toggleLoop();
     }
     else if (cmd == "play") {
         if (parts.size() > 1) {
@@ -315,8 +319,18 @@ void MusicPlayer::displayCurrentProgress() {
 }
 
 int MusicPlayer::getSongDisplayIndex(const Song& song) {
-    // Always show global song ID for easy playlist management
-    // This allows users to add songs to playlists regardless of current mode
+    // If we're in playlist mode (including random playlist), show playlist position
+    if (queueMode == QueueMode::PLAYLIST || 
+        (queueMode == QueueMode::RANDOM && !currentPlaylistName.empty())) {
+        
+        for (size_t i = 0; i < currentQueue.size(); ++i) {
+            if (currentQueue[i] == song) {
+                return static_cast<int>(i + 1); // Playlist position (1-based)
+            }
+        }
+    }
+    
+    // For all songs mode (including random all songs), show global ID
     return song.id;
 }
 
@@ -435,7 +449,11 @@ void MusicPlayer::showCurrentSong() {
                 modeStr = "Playlist: " + currentPlaylistName;
                 break;
             case QueueMode::RANDOM:
-                modeStr = "Random Mode";
+                if (!currentPlaylistName.empty()) {
+                    modeStr = "Random - Playlist: " + currentPlaylistName;
+                } else {
+                    modeStr = "Random - All Songs";
+                }
                 break;
         }
         std::cout << "Mode: " << modeStr << std::endl;
@@ -488,20 +506,44 @@ void MusicPlayer::setQueueFromPlaylist(const std::string& playlistName) {
 }
 
 void MusicPlayer::setRandomMode() {
-    if (allSongs.empty()) {
+    if (currentQueue.empty()) {
         std::cout << "No songs available for random mode!" << std::endl;
         return;
     }
     
-    currentQueue = allSongs;
+    // Keep current queue but switch to random mode
+    QueueMode previousMode = queueMode;
     queueMode = QueueMode::RANDOM;
-    currentPlaylistName.clear();
-    generateRandomIndices();
-    currentSongIndex = randomIndices[0];
-    randomPosition = 0;
     
-    std::cout << "Random mode enabled! Playing random song..." << std::endl;
-    playCurrentSong();
+    generateRandomIndices();
+    
+    // If we have a current song, find its position in the random order
+    if (currentSongIndex >= 0 && currentSongIndex < static_cast<int>(currentQueue.size())) {
+        // Find the current song in the random indices
+        for (size_t i = 0; i < randomIndices.size(); ++i) {
+            if (randomIndices[i] == currentSongIndex) {
+                randomPosition = static_cast<int>(i);
+                break;
+            }
+        }
+    } else {
+        // No current song, start from beginning of random order
+        currentSongIndex = randomIndices[0];
+        randomPosition = 0;
+    }
+    
+    // Show appropriate message based on what we're randomizing
+    if (previousMode == QueueMode::PLAYLIST) {
+        std::cout << "Random mode enabled for playlist '" << currentPlaylistName << "' (" << currentQueue.size() << " songs)" << std::endl;
+    } else {
+        std::cout << "Random mode enabled for all songs (" << currentQueue.size() << " songs)" << std::endl;
+    }
+    
+    // Start playing if we weren't already playing
+    if (audioPlayer.getState() == PlaybackState::STOPPED) {
+        std::cout << "Playing random song..." << std::endl;
+        playCurrentSong();
+    }
 }
 
 void MusicPlayer::generateRandomIndices() {
@@ -537,21 +579,33 @@ void MusicPlayer::displayQueue() {
             std::cout << " (Playlist: " << currentPlaylistName << ")";
             break;
         case QueueMode::RANDOM:
-            std::cout << " (Random Mode)";
+            if (!currentPlaylistName.empty()) {
+                std::cout << " (Random - Playlist: " << currentPlaylistName << ")";
+            } else {
+                std::cout << " (Random - All Songs)";
+            }
             break;
     }
     std::cout << ":" << std::endl;
     std::cout << "===========================================" << std::endl;
     
     if (queueMode == QueueMode::RANDOM) {
-        // Show next few songs in random order WITH their global IDs
-        int showCount = std::min(10, static_cast<int>(randomIndices.size()));
+        // Show next few songs in random order
+        int showCount = (std::min)(10, static_cast<int>(randomIndices.size()));
         for (int i = 0; i < showCount; ++i) {
             int pos = (randomPosition + i) % static_cast<int>(randomIndices.size());
             int songIdx = randomIndices[pos];
             const Song& song = currentQueue[songIdx];
             std::string marker = (i == 0) ? " -> " : "    ";
-            std::cout << marker << song.id << ". " << song.getDisplayName() << std::endl;
+            
+            // Show appropriate index based on context
+            if (!currentPlaylistName.empty()) {
+                // In playlist random mode, show playlist position
+                std::cout << marker << (songIdx + 1) << ". " << song.getDisplayName() << std::endl;
+            } else {
+                // In all songs random mode, show global ID
+                std::cout << marker << song.id << ". " << song.getDisplayName() << std::endl;
+            }
         }
         if (randomIndices.size() > 10) {
             std::cout << "    ... and " << (randomIndices.size() - 10) << " more songs in random order" << std::endl;
@@ -560,13 +614,7 @@ void MusicPlayer::displayQueue() {
         for (size_t i = 0; i < currentQueue.size(); ++i) {
             std::string marker = (static_cast<int>(i) == currentSongIndex) ? " -> " : "    ";
             int displayIndex = getSongDisplayIndex(currentQueue[i]);
-            std::cout << marker;
-            if (displayIndex > 0) {
-                std::cout << displayIndex << ". ";
-            } else {
-                std::cout << (i + 1) << ". ";
-            }
-            std::cout << currentQueue[i].getDisplayName() << std::endl;
+            std::cout << marker << displayIndex << ". " << currentQueue[i].getDisplayName() << std::endl;
         }
     }
 }
@@ -680,6 +728,7 @@ void MusicPlayer::saveSettings() {
     if (file.is_open()) {
         file << "volume=" << savedVolume << std::endl;
         file << "show_progress=" << (showProgressTimer ? "1" : "0") << std::endl;
+        file << "loop_mode=" << (loopCurrentSong ? "1" : "0") << std::endl;
         file.close();
     }
 }
@@ -703,9 +752,23 @@ void MusicPlayer::loadSettings() {
                 } catch (...) {
                     showProgressTimer = false;
                 }
+            } else if (line.find("loop_mode=") == 0) {
+                try {
+                    loopCurrentSong = (std::stoi(line.substr(10)) == 1);
+                } catch (...) {
+                    loopCurrentSong = false;
+                }
             }
         }
         file.close();
+    }
+}
+
+void MusicPlayer::toggleLoop() {
+    loopCurrentSong = !loopCurrentSong;
+    std::cout << "Loop mode " << (loopCurrentSong ? "enabled" : "disabled") << std::endl;
+    if (loopCurrentSong) {
+        std::cout << "Current song will repeat when finished" << std::endl;
     }
 }
 
@@ -714,8 +777,13 @@ void MusicPlayer::update() {
     
     // Check if song finished naturally (not manually stopped)
     if (audioPlayer.hasFinished() && currentSongIndex >= 0 && !currentQueue.empty()) {
-        std::cout << "\n\nSong finished, auto-advancing to next..." << std::endl;
-        playNext();
+        if (loopCurrentSong) {
+            std::cout << "\n\nSong finished, looping current song..." << std::endl;
+            playCurrentSong(); // Replay the same song
+        } else {
+            std::cout << "\n\nSong finished, auto-advancing to next..." << std::endl;
+            playNext();
+        }
         return; // Exit early after starting next song
     }
     

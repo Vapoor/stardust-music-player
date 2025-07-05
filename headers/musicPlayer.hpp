@@ -1,4 +1,4 @@
-// Enhanced musicPlayer.hpp with timer and display features
+// Enhanced musicPlayer.hpp with timer, display features, and loop functionality
 #ifndef MUSICPLAYER_HPP
 #define MUSICPLAYER_HPP
 
@@ -44,6 +44,7 @@ private:
     std::string currentPlaylistName;
     float savedVolume;               // Persistent volume
     bool showProgressTimer;          // Show progress timer
+    bool loopCurrentSong;            // Loop current song
     
     void displayMenu();
     void processCommand(const std::string& command);
@@ -61,6 +62,7 @@ private:
     void stopPlayback();
     void setVolume(float volume);
     void showCurrentSong();
+    void toggleLoop();
     
     // Display functions
     void displayPlayingMessage();
