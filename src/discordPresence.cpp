@@ -9,7 +9,7 @@
 #endif
 
 // Your Discord Application ID
-const int64_t APPLICATION_ID = 1389957827065548892;
+const int64_t APPLICATION_ID = 0; //1389957827065548892;
 
 RichPresence::RichPresence() 
     : core(nullptr), activities(nullptr), isInitialized(false), isConnected(false),
