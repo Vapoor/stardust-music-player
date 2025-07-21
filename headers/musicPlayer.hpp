@@ -63,6 +63,7 @@ private:
     void setVolume(float volume);
     void showCurrentSong();
     void toggleLoop();
+    void checkCurrentSongInPlaylist(const std::string& playlistName);
     
     // Display functions
     void displayPlayingMessage();

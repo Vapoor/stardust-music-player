@@ -1,11 +1,10 @@
-# osu!Listener
+# StarDust
 
-
-A console-based music player specifically designed for osu! beatmap collections. Automatically scans your osu! Songs folder and allows you to create custom playlists and control playback with simple commands.
+A console-based music player specifically designed for rhythm games. Automatically scans your songs folder and allows you to create custom playlists and control playback with simple commands.
 
 ## Features
 
-- **Automatic Song Discovery**: Scans `%LOCALAPPDATA%/osu!/Songs` for all beatmaps
+- **Automatic Song Discovery**: Scans all your songs from your differents rhythm games.
 - **Duplicate Handling**: Automatically filters out duplicate songs with different IDs
 - **Custom Playlists**: Create, manage, and play custom playlists
 - **Playback Controls**: Play, pause, stop, next, previous, volume control
@@ -80,7 +79,7 @@ A console-based music player specifically designed for osu! beatmap collections.
 
 ```
 > scan
-Scanning osu! songs directory...
+Scanning songs...
 Found 150 unique songs.
 
 > list
@@ -127,11 +126,6 @@ Now rebuild the app, the .bat should inform you if he found or not the SDK. If y
 
 ## Troubleshooting
 
-### "osu! Songs folder not found"
-- Ensure osu! is installed in the standard location (`%LOCALAPPDATA%/osu!/`)
-- Check that the Songs folder exists and contains beatmap folders
-- **osu!Lazer is not supported for now**
-
 ### "FMOD not available" or no audio
 - Download and properly install FMOD as described in the installation steps
 - Ensure `fmod.dll` is in the same directory as the executable
@@ -141,7 +135,6 @@ Now rebuild the app, the .bat should inform you if he found or not the SDK. If y
 - Ensure you're using a C++17 compatible compiler
 - Check that all source files are in the same directory
 - For Visual Studio: use "x64" configuration, not "x86"
-
 
 ## License
 

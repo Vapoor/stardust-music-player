@@ -90,7 +90,6 @@ void PlaylistManager::addSongToPlaylist(const std::string& playlistName, const S
     auto it = playlists.find(playlistName);
     if (it != playlists.end()) {
         it->second.addSong(song);
-        std::cout << "Music added to the playlist " << playlistName << std::endl;
     } else {
         std::cout << "Playlist '" << playlistName << "' not found!" << std::endl;
     }

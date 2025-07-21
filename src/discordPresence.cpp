@@ -9,7 +9,7 @@
 #endif
 
 // Your Discord Application ID
-const int64_t APPLICATION_ID = 0; //1389957827065548892;
+const int64_t APPLICATION_ID = 1389957827065548892;
 
 RichPresence::RichPresence() 
     : core(nullptr), activities(nullptr), isInitialized(false), isConnected(false),
@@ -214,7 +214,7 @@ void RichPresence::applyCurrentState() {
     // Update Discord (or console)
 #ifdef DISCORD_AVAILABLE
     if (isConnected) {
-        setActivity(details, state, "osu_logo", "osuListener by Vapor", smallImageKey, smallImageText);
+        setActivity(details, state, "logo", "Stardust by Vapor", smallImageKey, smallImageText);
         
         // Update our cache
         lastAppliedDetails = details;
@@ -240,7 +240,7 @@ void RichPresence::getDiscordStrings(const PresenceData& data, std::string& deta
             if (data.isInPlaylist && !data.playlistName.empty()) {
                 state = "Playlist: " + data.playlistName + " • Made by Vapor";
             } else {
-                state = "Browsing osu! collection • Made by Vapor";
+                state = "Browsing Stardust collection • Made by Vapor";
             }
             smallImageKey = "play_icon";
             smallImageText = "Playing";
@@ -251,7 +251,7 @@ void RichPresence::getDiscordStrings(const PresenceData& data, std::string& deta
             if (data.isInPlaylist && !data.playlistName.empty()) {
                 state = "Playlist: " + data.playlistName + " • Made by Vapor";
             } else {
-                state = "Browsing osu! collection • Made by Vapor";
+                state = "Browsing Stardust collection • Made by Vapor";
             }
             smallImageKey = "pause_icon";
             smallImageText = "Paused";
@@ -267,7 +267,7 @@ void RichPresence::getDiscordStrings(const PresenceData& data, std::string& deta
         case PresenceState::IDLE:
         default:
             details = "Idle";
-            state = "Ready to listen to osu! beats • Made by Vapor";
+            state = "Ready to listen to Stardust • Made by Vapor";
             smallImageKey = "";
             smallImageText = "";
             break;

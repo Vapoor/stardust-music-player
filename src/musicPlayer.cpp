@@ -17,7 +17,7 @@ MusicPlayer::~MusicPlayer() {
 }
 
 bool MusicPlayer::initialize() {
-    std::cout << "Initializing osu! Music Player..." << std::endl;
+    std::cout << "Initializing Stardust Music Player..." << std::endl;
     
     // Initialize audio player
     if (!audioPlayer.initialize()) {
@@ -43,7 +43,7 @@ bool MusicPlayer::initialize() {
 }
 
 void MusicPlayer::run() {
-    std::cout << "\n=== osu! Music Player ===" << std::endl;
+    std::cout << "\n=== Stardust Music Player ===" << std::endl;
     std::cout << "Type 'help' for available commands" << std::endl;
     richPresence.setBrowsingState(static_cast<int>(allSongs.size()));
     
@@ -93,7 +93,6 @@ void MusicPlayer::displayMenu() {
     std::cout << "  play - Resume/play current song" << std::endl;
     std::cout << "  pause - Pause playback" << std::endl;
     std::cout << "  stop - Stop playback" << std::endl;
-    std::cout << "  loop - Loop the current song" << std::endl;
     std::cout << "  next - Next song" << std::endl;
     std::cout << "  prev - Previous song" << std::endl;
     std::cout << "  vol <0-100> - Set volume (persistent)" << std::endl;
@@ -143,6 +142,10 @@ void MusicPlayer::processCommand(const std::string& command) {
     }
     else if (cmd == "loop") {
         toggleLoop();
+    }
+    else if (cmd == "check" && parts.size() > 1) {
+        std::string playlistName = parts[1];
+        checkCurrentSongInPlaylist(playlistName);
     }
     else if (cmd == "play") {
         if (parts.size() > 1) {
@@ -216,7 +219,7 @@ void MusicPlayer::processCommand(const std::string& command) {
 }
 
 void MusicPlayer::scanSongs() {
-    std::cout << "Scanning osu! songs..." << std::endl;
+    std::cout << "Scanning music library..." << std::endl;
     allSongs = SongScanner::scanOsuSongs();
     
     // Assign IDs to songs for easier reference
@@ -624,7 +627,9 @@ void MusicPlayer::updateDiscordPresence() {
         const Song& song = currentQueue[currentSongIndex];
         bool isPlaying = audioPlayer.isPlaying();
         
-        bool inPlaylist = (queueMode == QueueMode::PLAYLIST);
+        // Determine if we're in playlist mode (including random playlist)
+        bool inPlaylist = (queueMode == QueueMode::PLAYLIST || 
+                          (queueMode == QueueMode::RANDOM && !currentPlaylistName.empty()));
         std::string playlistName = inPlaylist ? currentPlaylistName : "";
         
         if (isPlaying) {
@@ -769,6 +774,46 @@ void MusicPlayer::toggleLoop() {
     std::cout << "Loop mode " << (loopCurrentSong ? "enabled" : "disabled") << std::endl;
     if (loopCurrentSong) {
         std::cout << "Current song will repeat when finished" << std::endl;
+    }
+}
+
+void MusicPlayer::checkCurrentSongInPlaylist(const std::string& playlistName) {
+    // Check if we have a current song
+    if (currentSongIndex < 0 || currentSongIndex >= static_cast<int>(currentQueue.size())) {
+        std::cout << "No song is currently selected." << std::endl;
+        return;
+    }
+    
+    const Song& currentSong = currentQueue[currentSongIndex];
+    
+    // Get the playlist
+    Playlist* playlist = PlaylistManager::getInstance().getPlaylist(playlistName);
+    if (!playlist) {
+        std::cout << "Playlist '" << playlistName << "' not found!" << std::endl;
+        return;
+    }
+    
+    // Check if current song is in the playlist
+    const std::vector<Song>& playlistSongs = playlist->getSongs();
+    bool found = false;
+    int position = -1;
+    
+    for (size_t i = 0; i < playlistSongs.size(); ++i) {
+        if (playlistSongs[i] == currentSong) {
+            found = true;
+            position = static_cast<int>(i + 1); // 1-based position
+            break;
+        }
+    }
+    
+    // Display result
+    std::cout << "Current song: " << currentSong.getDisplayName() << std::endl;
+    
+    if (found) {
+        std::cout << "This song IS in playlist '" << playlistName << "' (position " << position << ")" << std::endl;
+    } else {
+        std::cout << "This song is NOT in playlist '" << playlistName << "'" << std::endl;
+        std::cout << "  Use 'add " << playlistName << " " << currentSong.id << "' to add it" << std::endl;
     }
 }
 
