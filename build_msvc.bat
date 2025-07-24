@@ -67,12 +67,12 @@ if defined DISCORD_LIBS (
          build\audioPlayer.obj build\main.obj build\musicPlayer.obj build\playlist.obj build\songScanner.obj build\discordPresence.obj ^
          /LIBPATH:"%FMOD_LIB%" fmod_vc.lib ^
          /LIBPATH:"%DISCORD_LIB%" %DISCORD_LIBS% ^
-         /OUT:bin\osuListener.exe
+         /OUT:bin\Stardust.exe
 ) else (
     link /nologo /MACHINE:X64 ^
          build\audioPlayer.obj build\main.obj build\musicPlayer.obj build\playlist.obj build\songScanner.obj build\discordPresence.obj ^
          /LIBPATH:"%FMOD_LIB%" fmod_vc.lib ^
-         /OUT:bin\osuListener.exe
+         /OUT:bin\Stardust.exe
 )
 
 if errorlevel 1 (
@@ -108,6 +108,6 @@ if defined DISCORD_LIBS (
     echo - Discord Rich Presence: Simulated ^(Discord SDK not found^)
 )
 echo.
-echo Run: bin\osuListener.exe
+echo Run: bin\Stardust.exe
 echo.
 pause
