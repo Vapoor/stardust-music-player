@@ -1,6 +1,6 @@
 # StarDust
 
-A console-based music player specifically designed for rhythm games. Automatically scans your songs folder and allows you to create custom playlists and control playback with simple commands.
+A console-based music player . Automatically scans your songs folders and allows you to create custom playlists and control playback with simple commands.
 
 ## Features
 
@@ -21,7 +21,7 @@ A console-based music player specifically designed for rhythm games. Automatical
 
 ## Installation for Users
 
-1. **Download the latest [release](https://github.com/Vapoor/osulistener/releases)**
+1. **Download the latest [release](https://github.com/Vapoor/stardust-music-player/releases)**
 
 2. **Uncompress the .rar and simply start the .exe !**
 
@@ -46,11 +46,11 @@ A console-based music player specifically designed for rhythm games. Automatical
 
 1. **Run the program**:
    ```
-   ./bin/osuListener.exe
+   ./bin/Stardust.exe
    ```
 2. **Basic Commands**:
    - `help` - Show all available commands
-   - `scan` - Scan osu! songs directory
+   - `scan` - Scan folders songs directory
    - `list` - Show all discovered songs
    - `play <number>` - Play song by index
    - `pause` - Pause/resume playback
@@ -108,9 +108,8 @@ Reached end of queue, looping to beginning.
 Playing: Camellia - Ghost
 ```
 
-- **Without FMOD**: The program will still work but will only simulate audio playback (no actual sound)
+- **Without FMOD**: The program will still work but will only simulate audio playback (no actual sound which is kinda dumb for a music player)
 - **Playlist Persistence**: Playlists are automatically saved to `playlists.txt` and loaded on startup
-- **osu! Path Detection**: Automatically detects the standard osu! installation path
 - **Memory Usage**: Designed to handle large song collections efficiently
 
 ## Setup Discord Rich Presence
