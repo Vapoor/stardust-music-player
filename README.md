@@ -1,4 +1,4 @@
-# StarDust
+# Stardust
 
 A console-based music player . Automatically scans your songs folders and allows you to create custom playlists and control playback with simple commands.
 
